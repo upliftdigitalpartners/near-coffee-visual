@@ -1,0 +1,145 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #0b0806;
+  color: #f3e8d8;
+  font-family: ui-serif, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.shop {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  transition: background 1.6s linear;
+}
+
+/* Every parallax layer is absolutely positioned inside here. */
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/*
+ * Film grain. Static rather than animated — moving grain reads as video
+ * noise, and this room should feel like a photograph someone took.
+ */
+.grain {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: 0.11;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 82% 74% at 50% 44%,
+    rgba(0, 0, 0, 0) 46%,
+    rgba(0, 0, 0, 0.3) 80%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+}
+
+.sign {
+  position: absolute;
+  top: clamp(18px, 3.4vh, 34px);
+  left: clamp(20px, 3.4vw, 44px);
+  pointer-events: none;
+}
+
+.sign h1 {
+  margin: 0;
+  font-size: clamp(17px, 1.9vw, 23px);
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  color: #f7e4c6;
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.85);
+}
+
+.sign p {
+  margin: 0.75em 0 0;
+  font-size: clamp(10px, 1.05vw, 12px);
+  letter-spacing: 0.16em;
+  opacity: 0.45;
+  font-style: italic;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+
+.clock {
+  position: absolute;
+  bottom: clamp(14px, 3vh, 26px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.clock-face,
+.clock-reset {
+  font-family: inherit;
+  background: rgba(12, 8, 6, 0.42);
+  border: 1px solid rgba(255, 226, 186, 0.18);
+  color: #f6e5cd;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.11em;
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+  opacity: 0.5;
+  transition: opacity 0.35s ease, border-color 0.35s ease;
+}
+
+.clock-face:hover,
+.clock-reset:hover,
+.clock.open .clock-face {
+  opacity: 1;
+  border-color: rgba(255, 226, 186, 0.4);
+}
+
+.clock-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  order: -1;
+  background: rgba(12, 8, 6, 0.5);
+  border: 1px solid rgba(255, 226, 186, 0.16);
+  border-radius: 999px;
+  padding: 9px 16px;
+  backdrop-filter: blur(7px);
+}
+
+.clock-panel input[type='range'] {
+  width: clamp(160px, 34vw, 320px);
+  accent-color: #ffb347;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
