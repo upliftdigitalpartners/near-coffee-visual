@@ -199,7 +199,7 @@ export default function App() {
         <p>a barn on mormon row · open whenever you are</p>
       </header>
 
-      <div className={`hint ${walked ? 'gone' : ''}`}>scroll to walk through</div>
+      <div className={`hint ${walked ? 'gone' : ''}`}>drag to look · tap the floor to walk</div>
       <div className={`station ${walked ? 'shown' : ''}`}>{station}</div>
 
       <div className="wall">

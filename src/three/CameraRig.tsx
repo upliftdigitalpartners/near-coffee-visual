@@ -2,36 +2,37 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { forcedStop } from '../scene/debug'
+import { clampToZones, floorAt, zoneAt } from '../scene/zones'
 
 /**
- * The camera.
+ * Walking, rather than being carried.
  *
- * Everything here is damped rather than set. A camera that tracks the pointer
- * exactly feels like a diagram; a camera that takes a moment to get there, and
- * overshoots slightly on the way, feels like a head turning. THREE.MathUtils
- * .damp is used throughout so the feel is identical at 60fps and 120fps —
- * lerping by a fixed fraction per frame silently doubles the speed on a
- * ProMotion display, which is the usual reason this sort of motion feels
- * different on different machines.
+ * This used to be a rail: scrolling advanced a parameter and the camera was
+ * placed along a fixed route of five stops. It made every frame composable,
+ * which is why the stops could be framed shot by shot — and it meant the barn
+ * was a corridor. You could look at the counter but never stand beside it, and
+ * nothing behind you existed because you could never turn round.
  *
- * Scrolling walks you from your table at the back of the barn up to the open
- * door. It is a dolly, not a page scroll — there is no page.
+ * So the rail is gone and the anchors survive as somewhere to *go*, not
+ * somewhere you are put. The cost is real and worth stating: a visitor can now
+ * stand anywhere, including places nobody composed, so the scene has to hold up
+ * from everywhere rather than from five points. That is the trade the handoff
+ * always intended — its camera section is free movement with named anchors —
+ * and it is the difference between a slideshow of a coffee shop and a coffee
+ * shop.
+ *
+ * Three ways to move, because the obvious one does not exist on a phone:
+ *
+ *   drag        look around, on pointer and touch alike
+ *   W/S, wheel  walk forward and back; A/D turn, Q/E strafe
+ *   tap a spot  walk there
+ *
+ * The last is the one that makes this work on a phone at all. Dragging is
+ * spent on looking, so touch has nothing left for walking, and the handoff
+ * simply does not say what a phone should do. Tapping the floor is the oldest
+ * answer in browser 3D and needs no instructions.
  */
 
-/**
- * Where you can be, in order.
- *
- * One scroll used to take you from the table to the door and that was the
- * whole building — which meant most of the barn was scenery you could never
- * turn to look at. Now scrolling walks a route, and each stop is a place
- * somebody would actually stand: your table, the counter where the coffee
- * happens, the wall people leave notes on, and finally the doorway.
- *
- * Positions are eased and damped between, so it reads as walking rather than
- * cutting. Stops are deliberately unevenly spaced along the scroll — the
- * distance between the counter and the wall is short in the room and short on
- * the wheel too.
- */
 type Station = {
   /** Where the camera stands. */
   at: THREE.Vector3
@@ -41,95 +42,68 @@ type Station = {
   label: string
 }
 
-const STATIONS: Station[] = [
-  /*
-   * Your table. You are sitting at it, so the cup belongs in the lower third
-   * and the door beyond it — the shot is "over my coffee, out at the range".
-   *
-   * The camera used to sit level and aim slightly *up*, which put the cup at
-   * 20 degrees below centre against a 23 degree half-frame: it was clipped by
-   * the bottom edge, and a bulb hung in the top of frame with nothing to do.
-   * Standing a little taller and looking four degrees down puts the whole cup
-   * and its saucer inside the frame, drops the bulb out of it, and lets the
-   * floor between here and the door — which is where the light actually is —
-   * carry the middle of the picture.
-   */
+/**
+ * Named places, kept from the rail.
+ *
+ * They are no longer a route — nothing walks between them in order — but they
+ * are still the six spots worth being, and they are what `?stop=` pins for a
+ * reproducible frame.
+ */
+export const STATIONS: Station[] = [
   {
     at: new THREE.Vector3(0.85, 1.3, 4.55),
     look: new THREE.Vector3(0.05, 0.72, -3.5),
     label: 'your table',
   },
-  /*
-   * The counter, looked at *along* rather than across.
-   *
-   * Square on from two and a half metres, the bottom forty per cent of the
-   * frame was the unlit front of the counter — a black band — and the espresso
-   * machine, the one thing that makes a counter a counter, was cut in half by
-   * the left edge. Standing further back and off the end turns the slab into a
-   * line running away from you: pastry case near and right, machine on the
-   * axis at four metres, the back shelf and its cups behind it.
-   */
   {
     at: new THREE.Vector3(2.9, 1.6, 3.6),
     look: new THREE.Vector3(4.2, 1.15, -0.8),
     label: 'the counter',
   },
-  /*
-   * The napkin wall. The old aim was at the *corner* of the room, past the end
-   * of the notes, so the shot was a documentary photograph of empty siding.
-   * This looks at the middle of the pinned area from three and a half metres,
-   * far enough back that the whole strip of wall — 1.15m to 3.1m up — is
-   * inside the frame, and off to one side so it is a wall in a room rather
-   * than a flat swatch held up to the lens. Three metres, not four: notes fill
-   * the pinned area from the bottom up, so on a quiet week the top of a
-   * further-back frame is all empty siding.
-   */
   {
     at: new THREE.Vector3(-2.45, 1.55, -1.35),
     look: new THREE.Vector3(-3.9, 1.88, -3.91),
     label: 'the wall',
   },
-  /*
-   * The board. It was three metres away and nearly forty degrees off its own
-   * axis, so it keystoned into a trapezoid and read as a poster peeling off
-   * the wall. Standing more nearly square to it — half a metre off centre
-   * instead of two — leaves only the keystone you would actually get from
-   * looking up at something hung above head height, which is the honest one.
-   * The right jamb of the door stays just inside the left edge, so the light
-   * falling across the slate has a visible source.
-   */
   {
     at: new THREE.Vector3(3.05, 1.62, -0.85),
     look: new THREE.Vector3(3.5, 2.08, -3.89),
     label: "today's bake",
   },
-  /*
-   * The doorway — and deliberately not down the middle of it.
-   *
-   * Standing on the axis at 4.6m, the opening filled the frame edge to edge
-   * and perfectly symmetrically, which is the failure the README warns about:
-   * the barn stops framing anything and you are looking at an unframed
-   * photograph. From back here and a metre off the centre line the door falls
-   * left of centre and takes about half the width, the napkin wall closes the
-   * left edge, the chalkboard closes the right, and the stripes the sun lays
-   * down the floor run between them into the opening.
-   *
-   * The four and a half degrees of downward pitch are not taste. Level, the
-   * nearest ceiling bulb lands at 21.7 degrees up against a 23 degree
-   * half-frame and is sliced in half by the top edge — a bright clipped blob
-   * with nothing attached to it. This drops it clear and buys more of the
-   * floor, which at this hour is the best thing in the shot anyway.
-   */
   {
     at: new THREE.Vector3(2.3, 1.62, 2.9),
     look: new THREE.Vector3(0.6, 1.02, -5.5),
     label: 'the doorway',
   },
+  {
+    /*
+     * Just through the hatch, looking down the length of the room rather than
+     * into the oven. Aimed at the oven from two metres, which is where this
+     * started, the frame is one glowing slab and you cannot tell it is a room
+     * at all — the bench, the racks and the low ceiling are the things that
+     * say bakery, and the oven only has to be at the end of them.
+     */
+    at: new THREE.Vector3(2.55, 1.58, 6.55),
+    look: new THREE.Vector3(2.0, 1.15, 9.4),
+    label: 'the bakery',
+  },
+  {
+    /* Just outside the door, facing back in. The porch proper is not built. */
+    at: new THREE.Vector3(-0.3, 1.58, -5.1),
+    look: new THREE.Vector3(0.4, 1.9, 2.0),
+    label: 'the threshold',
+  },
 ]
 
-/** How far the pointer can swing the view, in radians. */
-const YAW_RANGE = 0.26
-const PITCH_RANGE = 0.14
+/** Standing eye height, per the handoff. */
+const EYE = 1.58
+
+const WALK = 1.5
+const TURN = 1.5
+const PITCH_MIN = -0.55
+const PITCH_MAX = 0.45
+/** A drag longer than this is a look, not a tap. */
+const TAP_SLOP = 6
 
 export function CameraRig({
   onProgress,
@@ -138,83 +112,131 @@ export function CameraRig({
   onProgress?: (p: number) => void
   onStation?: (label: string) => void
 }) {
-  const { camera } = useThree()
+  const { camera, gl } = useThree()
 
-  const pointer = useRef({ x: 0, y: 0 })
-  const smoothed = useRef({ x: 0, y: 0 })
-  const targetProgress = useRef(0)
-  const progress = useRef(0)
-  const velocity = useRef(0)
-
-  const position = useRef(STATIONS[0].at.clone())
-  const lookAt = useRef(STATIONS[0].look.clone())
+  const pos = useRef(new THREE.Vector3(0.85, EYE, 4.55))
+  const yaw = useRef(Math.PI)
+  const pitch = useRef(-0.05)
+  const walkTo = useRef<THREE.Vector3 | null>(null)
+  const keys = useRef<Record<string, boolean>>({})
+  const moved = useRef(false)
   const lastLabel = useRef('')
 
   useEffect(() => {
-    camera.position.copy(STATIONS[0].at)
-    camera.lookAt(STATIONS[0].look)
-  }, [camera])
+    /*
+     * Aim at the door from the starting table. atan2 of (x, z) rather than
+     * (z, x): yaw 0 looks down -Z in three's convention, so the arguments are
+     * the other way round from the usual maths convention, and getting it
+     * backwards starts every visitor facing the back wall.
+     */
+    const d = new THREE.Vector3(0.05, 0, -3.5).sub(pos.current)
+    yaw.current = Math.atan2(-d.x, -d.z)
+    pitch.current = -0.04
+  }, [])
 
   useEffect(() => {
+    const el = gl.domElement
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    const onPointerMove = (e: PointerEvent) => {
+    let dragging = false
+    let lastX = 0
+    let lastY = 0
+    let downX = 0
+    let downY = 0
+
+    const onDown = (e: PointerEvent) => {
+      dragging = true
+      lastX = downX = e.clientX
+      lastY = downY = e.clientY
+      el.setPointerCapture?.(e.pointerId)
+    }
+
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return
+      const dx = e.clientX - lastX
+      const dy = e.clientY - lastY
+      lastX = e.clientX
+      lastY = e.clientY
       if (reduced) return
-      pointer.current = {
-        x: (e.clientX / window.innerWidth) * 2 - 1,
-        y: (e.clientY / window.innerHeight) * 2 - 1,
-      }
+      // Rates straight from the handoff.
+      yaw.current -= dx * 0.0032
+      pitch.current = THREE.MathUtils.clamp(
+        pitch.current - dy * 0.0026,
+        PITCH_MIN,
+        PITCH_MAX,
+      )
+      moved.current = true
     }
 
-    /*
-     * Wheel feeds velocity rather than position, so a trackpad flick carries
-     * and coasts to a stop instead of stopping dead with your fingers.
-     */
+    const onUp = (e: PointerEvent) => {
+      if (!dragging) return
+      dragging = false
+      el.releasePointerCapture?.(e.pointerId)
+      const slop = Math.hypot(e.clientX - downX, e.clientY - downY)
+      if (slop > TAP_SLOP) return
+
+      /*
+       * A tap. Cast the pointer at the floor plane analytically rather than
+       * raycasting the scene: the floor is y = 0 everywhere, and a real
+       * raycast would happily return a hit on the counter top or a napkin and
+       * walk you into the furniture.
+       */
+      const rect = el.getBoundingClientRect()
+      const ndc = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1,
+      )
+      const ray = new THREE.Raycaster()
+      ray.setFromCamera(ndc, camera)
+      // Looking at or above the horizon can never hit the floor in front of
+      // you; without this the intersection lands behind the camera.
+      if (ray.ray.direction.y > -0.02) return
+      const hit = new THREE.Vector3()
+      if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return
+      if (!zoneAt(hit.x, hit.z)) return
+      walkTo.current = hit
+      moved.current = true
+    }
+
     const onWheel = (e: WheelEvent) => {
-      velocity.current += e.deltaY * 0.00022
+      pos.current.addScaledVector(forward(yaw.current), -e.deltaY * 0.0016)
+      walkTo.current = null
+      moved.current = true
     }
 
-    let touchY: number | null = null
-    const onTouchStart = (e: TouchEvent) => {
-      touchY = e.touches[0]?.clientY ?? null
-    }
-    const onTouchMove = (e: TouchEvent) => {
-      const y = e.touches[0]?.clientY
-      if (y == null || touchY == null) return
-      velocity.current += (touchY - y) * 0.0010
-      touchY = y
-      // Tilt the view with the thumb, since there is no pointer on a phone.
-      pointer.current = {
-        x: (e.touches[0].clientX / window.innerWidth) * 2 - 1,
-        y: (y / window.innerHeight) * 2 - 1,
+    const onKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase()
+      if (['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+        keys.current[k] = e.type === 'keydown'
+        if (e.type === 'keydown') {
+          walkTo.current = null
+          moved.current = true
+        }
       }
     }
-    const onTouchEnd = () => {
-      touchY = null
-    }
 
-    window.addEventListener('pointermove', onPointerMove, { passive: true })
-    window.addEventListener('wheel', onWheel, { passive: true })
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchmove', onTouchMove, { passive: true })
-    window.addEventListener('touchend', onTouchEnd, { passive: true })
+    el.addEventListener('pointerdown', onDown)
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+    el.addEventListener('pointercancel', onUp)
+    el.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKey)
     return () => {
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('wheel', onWheel)
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('pointerdown', onDown)
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+      el.removeEventListener('pointercancel', onUp)
+      el.removeEventListener('wheel', onWheel)
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKey)
     }
-  }, [])
+  }, [camera, gl])
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05)
 
-    /*
-     * Pinned to one station for a comparable frame. No easing, no breath, no
-     * pointer sway — otherwise every screenshot is taken from a slightly
-     * different place and framing cannot be judged at all.
-     */
+    /* Pinned to one anchor for a comparable frame. See scene/debug.ts. */
     const pin = forcedStop()
     if (pin != null) {
       const s = STATIONS[THREE.MathUtils.clamp(pin, 0, STATIONS.length - 1)]
@@ -223,53 +245,81 @@ export function CameraRig({
       return
     }
 
-    // Coast, then settle.
-    targetProgress.current = THREE.MathUtils.clamp(
-      targetProgress.current + velocity.current,
-      0,
-      1,
-    )
-    velocity.current *= Math.pow(0.02, dt)
-    progress.current = THREE.MathUtils.damp(progress.current, targetProgress.current, 3.2, dt)
-    onProgress?.(progress.current)
+    const k = keys.current
+    const ahead = (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0)
+    const side = (k.e ? 1 : 0) - (k.q ? 1 : 0)
+    const turn = (k.arrowleft || k.a ? 1 : 0) - (k.arrowright || k.d ? 1 : 0)
 
-    /*
-     * Walk the station list. The eased fraction is taken *within* each leg
-     * rather than across the whole route, so the camera settles into every
-     * stop instead of gliding through the middle ones at speed.
-     */
-    const legs = STATIONS.length - 1
-    const scaled = THREE.MathUtils.clamp(progress.current, 0, 1) * legs
-    const i = Math.min(Math.floor(scaled), legs - 1)
-    const raw = scaled - i
-    const p = raw * raw * (3 - 2 * raw)
+    if (turn) yaw.current += turn * TURN * dt
+    if (ahead) pos.current.addScaledVector(forward(yaw.current), ahead * WALK * dt)
+    if (side) pos.current.addScaledVector(right(yaw.current), side * WALK * dt)
 
-    position.current.lerpVectors(STATIONS[i].at, STATIONS[i + 1].at, p)
-    lookAt.current.lerpVectors(STATIONS[i].look, STATIONS[i + 1].look, p)
-    const label = p < 0.5 ? STATIONS[i].label : STATIONS[i + 1].label
-    if (label !== lastLabel.current) {
-      lastLabel.current = label
-      onStation?.(label)
+    // Walking to a tapped spot, and turning to face it on the way.
+    if (walkTo.current) {
+      const to = walkTo.current
+      const dx = to.x - pos.current.x
+      const dz = to.z - pos.current.z
+      const dist = Math.hypot(dx, dz)
+      if (dist < 0.14) {
+        walkTo.current = null
+      } else {
+        const step = Math.min(WALK * dt, dist)
+        pos.current.x += (dx / dist) * step
+        pos.current.z += (dz / dist) * step
+        const want = Math.atan2(-dx, -dz)
+        // Shortest way round, or a walk east turns the long way through west.
+        let d = ((want - yaw.current + Math.PI) % (Math.PI * 2)) - Math.PI
+        if (d < -Math.PI) d += Math.PI * 2
+        yaw.current += d * Math.min(1, dt * 3.2)
+      }
     }
 
-    smoothed.current.x = THREE.MathUtils.damp(smoothed.current.x, pointer.current.x, 2.6, dt)
-    smoothed.current.y = THREE.MathUtils.damp(smoothed.current.y, pointer.current.y, 2.6, dt)
+    const [cx, cz] = clampToZones(pos.current.x, pos.current.z)
+    pos.current.x = cx
+    pos.current.z = cz
 
     // Breathing. Small enough to be felt rather than seen.
     const t = state.clock.elapsedTime
     const breath = Math.sin(t * 0.62) * 0.012 + Math.sin(t * 0.24) * 0.018
+    const bob = ahead || walkTo.current ? Math.sin(t * 7.4) * 0.016 : 0
 
     camera.position.set(
-      position.current.x + smoothed.current.x * 0.34,
-      position.current.y + breath - smoothed.current.y * 0.1,
-      position.current.z,
+      pos.current.x,
+      floorAt(cx, cz) + EYE + breath + bob,
+      pos.current.z,
+    )
+    camera.quaternion.setFromEuler(
+      new THREE.Euler(pitch.current, yaw.current, 0, 'YXZ'),
     )
 
-    const target = lookAt.current.clone()
-    target.x -= smoothed.current.x * YAW_RANGE * 12
-    target.y -= smoothed.current.y * PITCH_RANGE * 12
-    camera.lookAt(target)
+    if (moved.current) {
+      onProgress?.(1)
+      moved.current = false
+    }
+
+    // Whichever named place you are nearest, for the label in the corner.
+    let best = STATIONS[0]
+    let bestD = Infinity
+    for (const s of STATIONS) {
+      const d = s.at.distanceToSquared(camera.position)
+      if (d < bestD) {
+        bestD = d
+        best = s
+      }
+    }
+    if (best.label !== lastLabel.current) {
+      lastLabel.current = best.label
+      onStation?.(best.label)
+    }
   })
 
   return null
+}
+
+function forward(y: number): THREE.Vector3 {
+  return new THREE.Vector3(-Math.sin(y), 0, -Math.cos(y))
+}
+
+function right(y: number): THREE.Vector3 {
+  return new THREE.Vector3(Math.cos(y), 0, -Math.sin(y))
 }

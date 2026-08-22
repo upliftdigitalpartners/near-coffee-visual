@@ -38,6 +38,15 @@ export const BARN = {
   door: { x0: -1.8, x1: 1.8, y1: 3.4 },
   /** A small opening on the south wall, for cross light. */
   sideWindow: { z0: 0.4, z1: 2.2, y0: 1.9, y1: 3.1 },
+  /**
+   * The way through to the bakery, cut in the back wall.
+   *
+   * Off-centre on purpose. Centred, it lines up with the open door at the
+   * other end and you can see straight out of the building from inside the
+   * bakery — which makes the barn read as a tunnel rather than a room with
+   * another room off it.
+   */
+  hatch: { x0: 1.5, x1: 3.3, y1: 2.35 },
 } as const
 
 const BOARD_W = 0.30
@@ -192,13 +201,14 @@ function useBarnGeometry() {
       }),
     )
 
-    // Back (east) gable end.
+    // Back (east) gable end, with the doorway through to the bakery.
     all.push(
       ...sideOfBoards({
         seed: 202,
         u0: -HW,
         u1: HW,
         heightAt: gableHeight,
+        opening: { u0: BARN.hatch.x0, u1: BARN.hatch.x1, y0: 0, y1: BARN.hatch.y1 },
         place: (u, y) => [u, y, backZ],
         rotY: 0,
       }),
