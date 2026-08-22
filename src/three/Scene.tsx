@@ -10,6 +10,8 @@ import { Backdrop } from './Backdrop'
 import { Fixtures } from './Fixtures'
 import { CameraRig } from './CameraRig'
 import { NapkinWall } from './NapkinWall'
+import { Chalkboard } from './Chalkboard'
+import type { Bake } from '../wall/bake'
 import { Presence } from './Presence'
 import type { Peer } from '../presence/presence'
 import type { Napkin } from '../wall/napkins'
@@ -155,6 +157,7 @@ export function Scene({
   onToggleRadio,
   napkins,
   peers,
+  bake,
   onProgress,
 }: {
   hour: number
@@ -165,6 +168,7 @@ export function Scene({
   onToggleRadio?: () => void
   napkins: Napkin[]
   peers: Peer[]
+  bake: Bake | null
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
@@ -205,6 +209,7 @@ export function Scene({
 
       <Barn />
       <NapkinWall napkins={napkins} />
+      <Chalkboard bake={bake} />
       <Presence peers={peers} light={light} />
       <Fixtures
         light={light}

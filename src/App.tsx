@@ -13,6 +13,7 @@ import {
   type Napkin,
 } from './wall/napkins'
 import { createPresence, type Peer } from './presence/presence'
+import { fetchBake, type Bake } from './wall/bake'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -43,6 +44,8 @@ export default function App() {
   const presence = useRef(createPresence())
   const [peers, setPeers] = useState<Peer[]>([])
 
+  const [bake, setBake] = useState<Bake | null>(null)
+
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
     if (scrubbing) return
@@ -62,6 +65,18 @@ export default function App() {
         if (alive) setPlace(p)
       })
     }
+    load()
+    const id = setInterval(load, 15 * 60 * 1000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [])
+
+  // Today's bake. Read-only here — the board is Fahim's, not the visitors'.
+  useEffect(() => {
+    let alive = true
+    const load = () => fetchBake().then((b) => { if (alive) setBake(b) })
     load()
     const id = setInterval(load, 15 * 60 * 1000)
     return () => {
@@ -169,6 +184,7 @@ export default function App() {
         onToggleRadio={toggleRadio}
         napkins={napkins}
         peers={peers}
+        bake={bake}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}

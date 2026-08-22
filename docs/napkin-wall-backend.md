@@ -137,3 +137,46 @@ same chair while they are here. There are no names, no accounts and no way for
 one visitor to learn anything about another — which is not an oversight, it is
 the feature. If you ever add anything to this table, remember that a silhouette
 you can identify is just a person you are surveilling.
+
+---
+
+# Today's bake
+
+One line on the chalkboard by the door. Unlike the napkin wall, this one is
+**yours** — the browser may read it and nothing else. You change it from the
+Supabase table editor, which takes about fifteen seconds from a phone.
+
+```sql
+create table bake (
+  id         int primary key default 1,
+  text       text not null default '',
+  updated_at timestamptz not null default now(),
+  constraint one_row check (id = 1)
+);
+
+alter table bake enable row level security;
+grant select on bake to anon;
+
+-- Read only. There is deliberately no insert or update policy for anon, so
+-- nobody can chalk on your board through the public key.
+create policy "read the board" on bake for select using (true);
+
+insert into bake (id, text) values (1, 'cardamom buns. three left.');
+```
+
+Then set, alongside the other variables:
+
+```
+VITE_BAKE_ENDPOINT=https://<project>.supabase.co/rest/v1/bake?select=text,updated_at&limit=1
+```
+
+It reuses `VITE_WALL_KEY`.
+
+## Changing it each morning
+
+Supabase → Table Editor → `bake` → edit the `text` cell → Enter. The room picks
+it up within fifteen minutes, or immediately on a reload.
+
+Leave it empty and the slate reads "wiped clean", which is a true thing to show
+for a kitchen nobody is standing in. That is better than a stale line claiming
+there are buns.
