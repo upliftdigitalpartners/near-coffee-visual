@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { forcedStop } from '../scene/debug'
 
 /**
  * The camera.
@@ -150,6 +151,19 @@ export function CameraRig({
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05)
+
+    /*
+     * Pinned to one station for a comparable frame. No easing, no breath, no
+     * pointer sway — otherwise every screenshot is taken from a slightly
+     * different place and framing cannot be judged at all.
+     */
+    const pin = forcedStop()
+    if (pin != null) {
+      const s = STATIONS[THREE.MathUtils.clamp(pin, 0, STATIONS.length - 1)]
+      camera.position.copy(s.at)
+      camera.lookAt(s.look)
+      return
+    }
 
     // Coast, then settle.
     targetProgress.current = THREE.MathUtils.clamp(

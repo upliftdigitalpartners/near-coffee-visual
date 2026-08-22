@@ -65,8 +65,41 @@ const CENTRE_Y = PHOTO_BOTTOM_Y + HEIGHT / 2
 /** Wide enough that panning never runs off the end of the photograph. */
 const ARC = THREE.MathUtils.degToRad(170)
 
-/** Sampled off the snowfield in the lower third of the photograph. */
-const SNOW = new THREE.Color('#bfc8d1')
+/*
+ * Very nearly white, and that is a correction rather than a preference.
+ *
+ * This used to be a mid grey-blue sampled off the photograph's snowfield, and
+ * it double-darkened: the canvas below is already painted the colour of snow,
+ * so tinting it again landed the modelled ground about 25% darker than the
+ * photographed ground it runs into. Measured across the doorway at dusk, the
+ * plate's snow came back at 166 and the floor of the valley at 125 — the near
+ * ground darker than the far ground, which is backwards, and reads as a shadow
+ * lying across the foreground that nothing in the scene is casting.
+ *
+ * The canvas carries the colour and the grade carries the light. This carries
+ * neither, and only keeps a trace of blue.
+ */
+const SNOW = new THREE.Color('#fbfcfd')
+
+/*
+ * Where the modelled ground stops being the ground.
+ *
+ * The valley floor and the photograph cannot meet cleanly, and no amount of
+ * sizing fixes it. The plane's far rim is cut off where the backdrop cylinder
+ * occludes it — 62m out — and at eye height that rim sits 1.4 degrees below
+ * true horizon. The photograph's own horizon is at eye level, by construction.
+ * So a strip of the photograph's foreground, the sage and scrub in front of
+ * the range, is always left standing *above* the modelled snow, with a hard
+ * edge between them. That edge is what reads as a stage flat.
+ *
+ * It is unfixable as a join and trivial as a dissolve: the plane simply fades
+ * out over its last thirty metres and lets the photograph's own foreground
+ * carry the distance. There is no seam because there is no longer an edge, and
+ * what takes over is a real photograph of the right ground rather than a
+ * procedural approximation of it.
+ */
+const GROUND_SOLID_TO = 24
+const GROUND_GONE_BY = 54
 
 /**
  * Late-spring snowfield for the ground outside the door.
@@ -169,6 +202,30 @@ export function Backdrop({ light }: { light: SceneLight }) {
     uLift: { value: 0 },
   })
 
+  /*
+   * The declarations and the grade itself, so the plate and the ground can run
+   * the identical maths off the identical uniforms. They used to be graded by
+   * two different functions — the plate through this shader, the ground
+   * through a colour multiply — which is why at dusk the modelled snow stayed
+   * a cold pale blue while the photographed snow it had to sit against went
+   * warm. Two snowfields under two different suns, touching.
+   */
+  const GRADE_UNIFORMS = `
+    uniform float uExposure;
+    uniform float uSaturation;
+    uniform vec3  uTint;
+    uniform float uTintAmount;
+    uniform float uLift;`
+
+  const GRADE_BODY = `
+    {
+      vec3 c = diffuseColor.rgb;
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      c = mix(vec3(l), c, uSaturation);
+      c = mix(c, uTint * l, uTintAmount);
+      diffuseColor.rgb = c * uExposure + uLift;
+    }`
+
   const plate = useMemo(() => {
     const m = new THREE.MeshBasicMaterial({
       map,
@@ -179,29 +236,60 @@ export function Backdrop({ light }: { light: SceneLight }) {
     m.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, grade.current)
       shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>\n${GRADE_UNIFORMS}`)
+        .replace('#include <map_fragment>', `#include <map_fragment>\n${GRADE_BODY}`)
+    }
+    return m
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map])
+
+  /*
+   * The valley floor: same grade, plus the dissolve into the photograph.
+   *
+   * Distance is taken in world space rather than from the disc's UVs, because
+   * the snow texture is tiled 110 times across it and vMapUv is therefore
+   * meaningless as a radius.
+   */
+  const groundMat = useMemo(() => {
+    const m = new THREE.MeshBasicMaterial({
+      map: ground,
+      color: SNOW,
+      toneMapped: false,
+      // Matches the plate, which is also unfogged. Fogging one and not the
+      // other reintroduces the mismatch this whole dissolve exists to remove.
+      fog: false,
+      transparent: true,
+      // The photograph behind it is already in the depth buffer at 62m; the
+      // barn in front of it is opaque and drawn first. Writing depth here only
+      // lets the snow outside occlude the falling snow in front of it.
+      depthWrite: false,
+    })
+    m.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, grade.current)
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
+        .replace(
+          '#include <project_vertex>',
+          `#include <project_vertex>
+           vGroundXZ = (modelMatrix * vec4(position, 1.0)).xz;`,
+        )
+      shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
           `#include <common>
-           uniform float uExposure;
-           uniform float uSaturation;
-           uniform vec3  uTint;
-           uniform float uTintAmount;
-           uniform float uLift;`,
+           varying vec2 vGroundXZ;
+           ${GRADE_UNIFORMS}`,
         )
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
-           {
-             vec3 c = diffuseColor.rgb;
-             float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-             c = mix(vec3(l), c, uSaturation);
-             c = mix(c, uTint * l, uTintAmount);
-             diffuseColor.rgb = c * uExposure + uLift;
-           }`,
+           ${GRADE_BODY}
+           diffuseColor.a *= 1.0 - smoothstep(${GROUND_SOLID_TO.toFixed(1)}, ${GROUND_GONE_BY.toFixed(1)}, length(vGroundXZ));`,
         )
     }
     return m
-  }, [map])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ground])
 
   // Push the grade every frame; the day moves and so does the plate.
   useFrame(() => {
@@ -237,27 +325,21 @@ export function Backdrop({ light }: { light: SceneLight }) {
       <mesh geometry={geometry} position={[0, CENTRE_Y, 0]} material={plate} />
 
       {/*
-       * Valley floor, running out to meet the bottom of the photograph. Unlit
-       * and tinted by exactly the same factor as the backdrop, so the seam at
-       * the horizon falls between two identically exposed snowfields instead
-       * of between a lit surface and a photograph of one.
+       * Valley floor. Graded by the same uniforms as the plate above, and
+       * dissolved into it rather than butted against it — see GROUND_GONE_BY.
+       *
+       * It stays much larger than the cylinder even though its far half is now
+       * transparent: the disc has to reach past the cylinder in every
+       * direction, or the dissolve runs out before the horizon does and the
+       * rim comes back as an edge somewhere off to the side of the doorway.
        */}
-      {/*
-       * Far larger than the backdrop cylinder, and that matters. A disc the
-       * same radius as the cylinder ends *above* eye level — the rim of a
-       * finite plane always does — so its edge shows up as a hard grey band
-       * across the bottom of the doorway with the photographed snowfield
-       * still visible above it. Oversizing it puts the rim behind the
-       * cylinder, where it is occluded, and the two meet exactly on the
-       * cylinder's base circle: snow against snow, no seam.
-       */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.02, 0]}
+        material={groundMat}
+        renderOrder={-1}
+      >
         <circleGeometry args={[RADIUS * 5, 96]} />
-        <meshBasicMaterial
-          map={ground}
-          color={SNOW.clone().multiply(light.backdropTint)}
-          toneMapped={false}
-        />
       </mesh>
     </group>
   )

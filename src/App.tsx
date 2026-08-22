@@ -14,6 +14,7 @@ import {
 } from './wall/napkins'
 import { createPresence, type Peer } from './presence/presence'
 import { fetchBake, type Bake } from './wall/bake'
+import { forcedHour } from './scene/debug'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -24,8 +25,8 @@ function formatHour(h: number): string {
 }
 
 export default function App() {
-  const [hour, setHour] = useState(() => localHour())
-  const [scrubbing, setScrubbing] = useState(false)
+  const [hour, setHour] = useState(() => forcedHour() ?? localHour())
+  const [scrubbing, setScrubbing] = useState(() => forcedHour() != null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [walked, setWalked] = useState(false)
   const [place, setPlace] = useState<Place>({ solar: null, weather: null })
