@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 import type { Daylight } from '../scene/daylight'
+import type { Solar, Weather } from '../scene/place'
 
 /**
- * Translates the 2D daylight palette into a physical lighting setup.
+ * Translates the daylight palette into a physical lighting setup, using live
+ * solar geometry and current conditions at the barn when they are available.
  *
  * The palette from src/scene/daylight.ts survived the move to 3D intact — it
  * already encodes the thing that matters, which is that this building faces
@@ -11,12 +13,15 @@ import type { Daylight } from '../scene/daylight'
  * they swing round through the day on their own.
  */
 
-const SUNRISE = 5.9
-const SUNSET = 20.4
-const MAX_ELEVATION = THREE.MathUtils.degToRad(62)
+/** Fallbacks, used until the API answers — or if it never does. */
+const FALLBACK_SUNRISE = 5.9
+const FALLBACK_SUNSET = 20.4
+const FALLBACK_NOON_ALTITUDE = 62
+/** Sunrise NE, sunset NW: roughly right for 43°N in summer. */
+const FALLBACK_SUNRISE_AZIMUTH = 71
+const FALLBACK_SUNSET_AZIMUTH = 289
 
 export type SceneLight = {
-  /** Where the sun is, far enough out to read as parallel light. */
   sunPosition: THREE.Vector3
   sunColor: THREE.Color
   sunIntensity: number
@@ -32,48 +37,95 @@ export type SceneLight = {
   lampColor: THREE.Color
   lampIntensity: number
   sunUp: boolean
+  /** 0–1, straight from the weather. Drives how hard the shadows are. */
+  cloudCover: number
+  /** 0–1. Falling snow outside the door. */
+  snow: number
 }
 
-export function sceneLight(hour: number, light: Daylight): SceneLight {
-  const t = (hour - SUNRISE) / (SUNSET - SUNRISE)
+/**
+ * Compass bearing to a world direction.
+ *
+ * The barn's door faces west, which in this scene is -Z. So north is +X and
+ * east is +Z, and a bearing measured clockwise from north lands as
+ * (cos, sin) on (X, Z). Getting this backwards puts the morning sun in the
+ * doorway, which looks wrong in a way that is hard to name but easy to feel.
+ */
+function bearingToDirection(bearingDeg: number, altitudeDeg: number): THREE.Vector3 {
+  const a = THREE.MathUtils.degToRad(bearingDeg)
+  const e = THREE.MathUtils.degToRad(altitudeDeg)
+  const horiz = Math.cos(e)
+  return new THREE.Vector3(Math.cos(a) * horiz, Math.sin(e), Math.sin(a) * horiz)
+}
+
+export function sceneLight(
+  hour: number,
+  light: Daylight,
+  solar?: Solar | null,
+  weather?: Weather | null,
+): SceneLight {
+  const sunrise = solar?.sunrise ?? FALLBACK_SUNRISE
+  const sunset = solar?.sunset ?? FALLBACK_SUNSET
+  const noonAltitude = solar?.noonAltitude ?? FALLBACK_NOON_ALTITUDE
+  const riseAz = solar?.sunriseAzimuth ?? FALLBACK_SUNRISE_AZIMUTH
+  const setAz = solar?.sunsetAzimuth ?? FALLBACK_SUNSET_AZIMUTH
+
+  const span = Math.max(0.5, sunset - sunrise)
+  const t = (hour - sunrise) / span
   const sunUp = t > 0 && t < 1
+  const day = sunUp ? Math.sin(THREE.MathUtils.clamp(t, 0, 1) * Math.PI) : 0
 
   /*
-   * Sun track: rises in the east (+Z, behind the barn), passes through the
-   * south (-X), sets in the west (-Z) straight down the open door. That last
-   * part is why the evening light in here is what it is.
+   * Azimuth swings from the real sunrise bearing, through due south at solar
+   * noon, to the real sunset bearing. Today that is 71° -> 180° -> 288°. In
+   * December it narrows to something like 121° -> 239°, and the sun never
+   * gets round far enough to reach in through the door at all.
    */
-  const phi = THREE.MathUtils.clamp(t, 0, 1) * Math.PI
-  const elevation = Math.sin(THREE.MathUtils.clamp(t, 0, 1) * Math.PI) * MAX_ELEVATION
-  const horiz = Math.cos(elevation)
-  const dir = new THREE.Vector3(-Math.sin(phi) * horiz, Math.sin(elevation), Math.cos(phi) * horiz)
+  const azimuth =
+    t <= 0.5
+      ? THREE.MathUtils.lerp(riseAz, 180, THREE.MathUtils.clamp(t * 2, 0, 1))
+      : THREE.MathUtils.lerp(180, setAz, THREE.MathUtils.clamp((t - 0.5) * 2, 0, 1))
 
-  // Below the horizon the moon takes over from roughly the same quarter.
+  const altitude = day * noonAltitude
+
+  const cloud = weather?.cloudCover ?? 0
+  const moon = solar?.moonIllumination ?? 0.5
+
   const sunPosition = sunUp
-    ? dir.multiplyScalar(90)
-    : new THREE.Vector3(-30, 46, -70)
+    ? bearingToDirection(azimuth, altitude).multiplyScalar(90)
+    : // Moonlight, from the opposite quarter and much colder.
+      bearingToDirection((azimuth + 180) % 360, 34).multiplyScalar(90)
 
-  const dayness = sunUp ? Math.sin(THREE.MathUtils.clamp(t, 0, 1) * Math.PI) : 0
   // Low sun is dimmer but far warmer; this is what makes golden hour land.
-  const lowSun = sunUp ? Math.pow(1 - dayness, 1.7) : 0
+  const lowSun = sunUp ? Math.pow(1 - day, 1.7) : 0
+  const sunColor = new THREE.Color(light.shaftColor).lerp(new THREE.Color('#fff6e4'), 1 - lowSun)
 
-  const sunColor = new THREE.Color(light.shaftColor).lerp(
-    new THREE.Color('#fff6e4'),
-    1 - lowSun,
-  )
+  /*
+   * Cloud is the single biggest lever in here. Overcast does not just dim the
+   * sun, it removes the direction from the light: the stripes through the
+   * siding vanish and the whole barn goes flat and even. Turning the
+   * directional light down while turning ambient up is exactly that.
+   */
+  const overcast = Math.pow(cloud, 1.3)
+  const sunIntensity = sunUp
+    ? (0.5 + day * 3.4) * (1 - 0.78 * overcast)
+    : 0.16 * (0.35 + moon * 0.9) * (1 - 0.7 * overcast)
 
-  const sunIntensity = sunUp ? 0.5 + dayness * 3.4 : 0.16
-
-  const ambientColor = new THREE.Color(light.skyMid)
-  const ambientIntensity = sunUp ? 0.35 + dayness * 0.55 : 0.12
+  const ambientColor = new THREE.Color(light.skyMid).lerp(new THREE.Color('#b9c2cc'), overcast * 0.55)
+  const ambientIntensity = (sunUp ? 0.35 + day * 0.55 : 0.12 + moon * 0.06) * (1 + 0.85 * overcast)
 
   const bounceColor = new THREE.Color(light.flats).lerp(new THREE.Color(light.skyHorizon), 0.5)
-  const bounceIntensity = sunUp ? 0.25 + dayness * 0.5 : 0.06
+  const bounceIntensity = (sunUp ? 0.25 + day * 0.5 : 0.06) * (1 - 0.3 * overcast)
 
-  const fogColor = new THREE.Color(light.haze)
+  const fogColor = new THREE.Color(light.haze).lerp(new THREE.Color('#9aa3ad'), overcast * 0.5)
+
   const backdropTint = new THREE.Color(light.peakLight)
     .lerp(new THREE.Color('#ffffff'), 0.55)
-    .multiplyScalar(sunUp ? 0.55 + dayness * 0.65 : 0.16)
+    .multiplyScalar(sunUp ? 0.55 + day * 0.65 : 0.16 + moon * 0.1)
+    .lerp(new THREE.Color('#8d949c'), overcast * 0.4)
+
+  /* Snowfall arrives in cm per interval; anything at all is worth drawing. */
+  const snow = THREE.MathUtils.clamp((weather?.snowfallCm ?? 0) / 0.4, 0, 1)
 
   return {
     sunPosition,
@@ -84,10 +136,12 @@ export function sceneLight(hour: number, light: Daylight): SceneLight {
     bounceColor,
     bounceIntensity,
     fogColor,
-    fogDensity: 0.0032,
+    fogDensity: 0.0032 + overcast * 0.004,
     backdropTint,
     lampColor: new THREE.Color('#ffb257'),
     lampIntensity: light.lampIntensity,
     sunUp,
+    cloudCover: cloud,
+    snow,
   }
 }

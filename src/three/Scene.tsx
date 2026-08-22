@@ -1,8 +1,9 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import type { Daylight } from '../scene/daylight'
+import type { Solar, Weather } from '../scene/place'
 import { sceneLight } from './lighting'
 import { Barn, BARN } from './Barn'
 import { Backdrop } from './Backdrop'
@@ -78,17 +79,87 @@ function Lights({ light }: { light: ReturnType<typeof sceneLight> }) {
   )
 }
 
+
+/**
+ * Snow past the doorway, when it is actually snowing at the barn.
+ *
+ * Drawn only outside: a field of points falling through the volume in front of
+ * the door, recycled at the top. Intensity comes straight from Open-Meteo's
+ * snowfall reading, so most of the year this renders nothing at all — which is
+ * correct, and is the point.
+ */
+function Snow({ amount }: { amount: number }) {
+  const points = useRef<THREE.Points>(null)
+  const COUNT = 900
+  const AREA = 34
+  const TOP = 14
+
+  const { geometry, drift } = useMemo(() => {
+    const pos = new Float32Array(COUNT * 3)
+    const d = new Float32Array(COUNT * 2)
+    for (let i = 0; i < COUNT; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * AREA
+      pos[i * 3 + 1] = Math.random() * TOP
+      pos[i * 3 + 2] = -4 - Math.random() * AREA
+      d[i * 2] = 0.4 + Math.random() * 1.1
+      d[i * 2 + 1] = Math.random() * Math.PI * 2
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    return { geometry: g, drift: d }
+  }, [])
+
+  useFrame((state, delta) => {
+    if (!points.current) return
+    const dt = Math.min(delta, 0.05)
+    const t = state.clock.elapsedTime
+    const attr = points.current.geometry.attributes.position as THREE.BufferAttribute
+    for (let i = 0; i < COUNT; i++) {
+      let y = attr.getY(i) - drift[i * 2] * dt
+      let x = attr.getX(i) + Math.sin(t * 0.6 + drift[i * 2 + 1]) * dt * 0.35
+      if (y < 0) {
+        y = TOP
+        x = (Math.random() - 0.5) * AREA
+      }
+      attr.setXY(i, x, y)
+    }
+    attr.needsUpdate = true
+  })
+
+  if (amount <= 0.001) return null
+
+  return (
+    <points ref={points} geometry={geometry}>
+      <pointsMaterial
+        size={0.055}
+        color="#ffffff"
+        transparent
+        opacity={0.28 + amount * 0.45}
+        depthWrite={false}
+        sizeAttenuation
+      />
+    </points>
+  )
+}
+
 export function Scene({
   hour,
   daylight,
+  solar,
+  weather,
   onProgress,
 }: {
   hour: number
   daylight: Daylight
+  solar?: Solar | null
+  weather?: Weather | null
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
-  const light = useMemo(() => sceneLight(hour, daylight), [hour, daylight])
+  const light = useMemo(
+    () => sceneLight(hour, daylight, solar, weather),
+    [hour, daylight, solar, weather],
+  )
 
   return (
     <Canvas
@@ -117,6 +188,8 @@ export function Scene({
       <Suspense fallback={null}>
         <Backdrop light={light} />
       </Suspense>
+
+      <Snow amount={light.snow} />
 
       <Barn />
       <Fixtures

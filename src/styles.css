@@ -170,3 +170,24 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Live conditions at the barn, kept quiet in the corner. */
+.place-note {
+  position: absolute;
+  bottom: clamp(12px, 2.4vh, 22px);
+  right: clamp(16px, 3vw, 34px);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  opacity: 0.34;
+  pointer-events: none;
+  text-align: right;
+  max-width: 46vw;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 640px) {
+  .place-note {
+    display: none;
+  }
+}

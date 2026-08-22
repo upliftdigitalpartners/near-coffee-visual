@@ -313,11 +313,94 @@ function ease(t: number): number {
   return t * t * (3 - 2 * t)
 }
 
+
+/**
+ * Anchoring the model day to the real one.
+ *
+ * The keyframes above are a "mountain summer" day: first light at 4:30, the
+ * Grand burning at 5:54, the sun gone at 20:24. Those were reasonable guesses
+ * and two of them were half an hour out.
+ *
+ * Rather than rewrite the palette against live data — which would mean
+ * refitting every colour every time the season moved — the clock itself is
+ * warped. Real local time is remapped piecewise-linearly onto model time using
+ * the solar events as anchor points, so alpenglow always lands on the real
+ * sunrise and the shaft across the floor always lands on the real golden hour.
+ *
+ * The pleasant consequence is that the day breathes with the year for free. In
+ * late August the barn gets a fourteen-hour day; in December the same palette
+ * compresses into nine, with a long blue morning and an afternoon that is over
+ * before it starts.
+ */
+export type SolarAnchors = {
+  firstLight: number
+  sunrise: number
+  solarNoon: number
+  goldenHour: number
+  sunset: number
+  dusk: number
+  lastLight: number
+}
+
+/** Where each solar event sits in the keyframe table above. */
+const MODEL_DAY: SolarAnchors = {
+  firstLight: 4.5,
+  sunrise: 5.9,
+  solarNoon: 13,
+  goldenHour: 19.7,
+  sunset: 20.4,
+  dusk: 21.3,
+  lastLight: 22.6,
+}
+
+const MODEL_POINTS = [
+  0,
+  MODEL_DAY.firstLight,
+  MODEL_DAY.sunrise,
+  MODEL_DAY.solarNoon,
+  MODEL_DAY.goldenHour,
+  MODEL_DAY.sunset,
+  MODEL_DAY.dusk,
+  MODEL_DAY.lastLight,
+  24,
+]
+
+/**
+ * Real local hour -> model hour. Falls straight through to identity if the
+ * anchors are missing or not strictly increasing, which they will not be
+ * inside the Arctic Circle or if the API returns something odd. Near Coffee is
+ * at 43°N, but a scene that breaks on bad input is a scene that breaks.
+ */
+export function solarRemap(hour: number, solar?: SolarAnchors | null): number {
+  if (!solar) return hour
+  const real = [
+    0,
+    solar.firstLight,
+    solar.sunrise,
+    solar.solarNoon,
+    solar.goldenHour,
+    solar.sunset,
+    solar.dusk,
+    solar.lastLight,
+    24,
+  ]
+  for (let i = 1; i < real.length; i++) {
+    if (!(real[i] > real[i - 1])) return hour
+  }
+  for (let i = 0; i < real.length - 1; i++) {
+    if (hour >= real[i] && hour <= real[i + 1]) {
+      const t = (hour - real[i]) / (real[i + 1] - real[i])
+      return MODEL_POINTS[i] + t * (MODEL_POINTS[i + 1] - MODEL_POINTS[i])
+    }
+  }
+  return hour
+}
+
 /**
  * Resolve the light for a given hour of the day (0..24, fractional).
  */
-export function daylightAt(hour: number): Daylight {
-  const h = ((hour % 24) + 24) % 24
+export function daylightAt(hour: number, solar?: SolarAnchors | null): Daylight {
+  const h = solarRemap(((hour % 24) + 24) % 24, solar)
 
   let lo = KEYFRAMES[0]
   let hi = KEYFRAMES[KEYFRAMES.length - 1]

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { daylightAt, localHour } from './scene/daylight'
+import { fetchPlace, type Place } from './scene/place'
 import { Scene } from './three/Scene'
 
 function formatHour(h: number): string {
@@ -15,6 +16,7 @@ export default function App() {
   const [scrubbing, setScrubbing] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [walked, setWalked] = useState(false)
+  const [place, setPlace] = useState<Place>({ solar: null, weather: null })
 
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
@@ -23,13 +25,39 @@ export default function App() {
     return () => clearInterval(id)
   }, [scrubbing])
 
-  const daylight = useMemo(() => daylightAt(hour), [hour])
+  /*
+   * Conditions at the barn. Fetched once on load and then every quarter hour;
+   * both calls are cached and both fail soft, so a dead API just means the
+   * scene keeps using its built-in summer day.
+   */
+  useEffect(() => {
+    let alive = true
+    const load = () => {
+      fetchPlace().then((p) => {
+        if (alive) setPlace(p)
+      })
+    }
+    load()
+    const id = setInterval(load, 15 * 60 * 1000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [])
+
+  const daylight = useMemo(() => daylightAt(hour, place.solar), [hour, place.solar])
+
+  const conditions = place.weather
+    ? ` · ${Math.round(place.weather.temperatureC)}°C ${place.weather.label}`
+    : ''
 
   return (
     <main className="shop">
       <Scene
         hour={hour}
         daylight={daylight}
+        solar={place.solar}
+        weather={place.weather}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -45,6 +73,7 @@ export default function App() {
       <div className={`clock ${panelOpen ? 'open' : ''}`}>
         <button className="clock-face" onClick={() => setPanelOpen((v) => !v)} aria-expanded={panelOpen}>
           {formatHour(hour)} · {daylight.label}
+          {conditions}
         </button>
         {panelOpen && (
           <div className="clock-panel">
@@ -72,6 +101,14 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {place.solar && (
+        <div className="place-note">
+          live from mormon row, wyoming · sun {formatHour(place.solar.sunrise)}–
+          {formatHour(place.solar.sunset)}
+          {place.solar.moonPhase ? ` · ${place.solar.moonPhase.toLowerCase()} moon` : ''}
+        </div>
+      )}
     </main>
   )
 }
