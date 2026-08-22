@@ -11,6 +11,27 @@ matches the clock on your own wall.
 npm install && npm run dev
 ```
 
+## Where it runs
+
+Live at **https://www.nearcoffee.space/room/**
+
+The domain is a GitHub Pages site in a separate repo,
+`fahimalamwork/near-coffee-space-site`, whose root is the existing Near Coffee
+page — a single 3.36 MB `index.html`. This build is published into `room/`
+there and touches nothing else, so the homepage is unaffected and the room can
+be removed in one commit.
+
+```bash
+npm run deploy
+```
+
+That builds, clones the site repo, replaces `room/`, and pushes. It aborts if
+anything outside `room/` has changed — the homepage is not ours to overwrite.
+
+Because it has to sit under a subpath, Vite uses a relative `base` and the
+photograph is fetched through `import.meta.env.BASE_URL`. An absolute
+`/textures/...` works only at the domain root and 404s everywhere else.
+
 ## Where it is
 
 The building is a **Mormon Row** barn — the homesteads at Antelope Flats inside
