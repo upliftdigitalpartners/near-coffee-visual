@@ -209,10 +209,14 @@ export function Fixtures({
   light,
   bulbsOn,
   onToggleBulbs,
+  radioLabel,
+  onToggleRadio,
 }: {
   light: SceneLight
   bulbsOn: boolean
   onToggleBulbs: () => void
+  radioLabel: string
+  onToggleRadio?: () => void
 }) {
   const counterTop = useWoodMaterial('#6b543a', 0.7)
   const carcass = useWoodMaterial('#4a3a28')
@@ -249,8 +253,8 @@ export function Fixtures({
           </mesh>
         ))}
 
-        {/* The radio. Nothing plays yet, but this is where it will live. */}
-        <Interactive label="the radio">
+        {/* The radio. Click it. */}
+        <Interactive label={radioLabel} onClick={onToggleRadio}>
           <mesh position={[0, 1.2, -1.75]} castShadow>
             <boxGeometry args={[0.34, 0.22, 0.18]} />
             <meshStandardMaterial color="#54381f" roughness={0.6} />

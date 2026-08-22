@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { daylightAt, localHour } from './scene/daylight'
 import { fetchPlace, type Place } from './scene/place'
 import { Scene } from './three/Scene'
+import { Ambience } from './audio/ambience'
+import { Radio } from './audio/radio'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -17,6 +19,16 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [walked, setWalked] = useState(false)
   const [place, setPlace] = useState<Place>({ solar: null, weather: null })
+
+  const ambience = useRef<Ambience | null>(null)
+  const radio = useRef<Radio | null>(null)
+  const [soundOn, setSoundOn] = useState(false)
+  const [radioState, setRadioState] = useState<{
+    playing: boolean
+    loading: boolean
+    error?: string
+  }>({ playing: false, loading: false })
+  const [stationName, setStationName] = useState('')
 
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
@@ -45,6 +57,41 @@ export default function App() {
     }
   }, [])
 
+  // Wind at the barn drives the wind in the room.
+  useEffect(() => {
+    ambience.current?.update({ windKph: place.weather?.windKph })
+  }, [place.weather?.windKph])
+
+  const toggleSound = useCallback(async () => {
+    if (!ambience.current) ambience.current = new Ambience()
+    if (ambience.current.isRunning) {
+      await ambience.current.stop()
+      setSoundOn(false)
+    } else {
+      await ambience.current.start({ windKph: place.weather?.windKph })
+      setSoundOn(true)
+    }
+  }, [place.weather?.windKph])
+
+  const toggleRadio = useCallback(() => {
+    if (!radio.current) radio.current = new Radio()
+    const r = radio.current
+    if (r.isPlaying) {
+      r.stop()
+      setRadioState({ playing: false, loading: false })
+      return
+    }
+    setStationName(`${r.station.name} · ${r.station.attribution}`)
+    void r.play(setRadioState)
+  }, [])
+
+  const nextStation = useCallback(() => {
+    if (!radio.current) radio.current = new Radio()
+    const r = radio.current
+    r.next(setRadioState)
+    setStationName(`${r.station.name} · ${r.station.attribution}`)
+  }, [])
+
   const daylight = useMemo(() => daylightAt(hour, place.solar), [hour, place.solar])
 
   const conditions = place.weather
@@ -58,6 +105,8 @@ export default function App() {
         daylight={daylight}
         solar={place.solar}
         weather={place.weather}
+        radioLabel={radioState.playing ? 'turn it off' : 'put the radio on'}
+        onToggleRadio={toggleRadio}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -69,6 +118,32 @@ export default function App() {
       </header>
 
       <div className={`hint ${walked ? 'gone' : ''}`}>scroll to walk to the door</div>
+
+      <div className="audio">
+        <button
+          className={`audio-btn ${soundOn ? 'on' : ''}`}
+          onClick={toggleSound}
+          aria-pressed={soundOn}
+          title={soundOn ? 'silence the room' : 'listen to the room'}
+        >
+          {soundOn ? 'sound on' : 'sound off'}
+        </button>
+        <button
+          className={`audio-btn ${radioState.playing ? 'on' : ''}`}
+          onClick={toggleRadio}
+          aria-pressed={radioState.playing}
+        >
+          {radioState.loading ? 'tuning…' : radioState.playing ? 'radio on' : 'radio off'}
+        </button>
+        {(radioState.playing || radioState.error) && (
+          <button className="audio-btn ghost" onClick={nextStation} title="next station">
+            next
+          </button>
+        )}
+        {(radioState.playing || radioState.error) && (
+          <span className="audio-now">{radioState.error ?? stationName}</span>
+        )}
+      </div>
 
       <div className={`clock ${panelOpen ? 'open' : ''}`}>
         <button className="clock-face" onClick={() => setPanelOpen((v) => !v)} aria-expanded={panelOpen}>

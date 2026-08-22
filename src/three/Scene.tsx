@@ -147,12 +147,16 @@ export function Scene({
   daylight,
   solar,
   weather,
+  radioLabel,
+  onToggleRadio,
   onProgress,
 }: {
   hour: number
   daylight: Daylight
   solar?: Solar | null
   weather?: Weather | null
+  radioLabel: string
+  onToggleRadio?: () => void
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
@@ -196,6 +200,8 @@ export function Scene({
         light={light}
         bulbsOn={bulbsOn}
         onToggleBulbs={() => setBulbsOn((v) => !v)}
+        radioLabel={radioLabel}
+        onToggleRadio={onToggleRadio}
       />
 
       {/* Threshold plank worn smooth by a hundred years of boots. */}

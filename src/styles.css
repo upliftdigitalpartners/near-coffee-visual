@@ -191,3 +191,55 @@ body {
     display: none;
   }
 }
+
+/* Sound controls. Deliberately dull-looking: nothing here should compete
+   with the room, and nothing plays until you ask it to. */
+.audio {
+  position: absolute;
+  top: clamp(16px, 3vh, 30px);
+  right: clamp(16px, 3vw, 34px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 60vw;
+}
+
+.audio-btn {
+  font-family: inherit;
+  background: rgba(12, 8, 6, 0.42);
+  border: 1px solid rgba(255, 226, 186, 0.16);
+  color: #f6e5cd;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+  opacity: 0.45;
+  transition: opacity 0.3s ease, border-color 0.3s ease;
+}
+
+.audio-btn:hover {
+  opacity: 1;
+}
+
+.audio-btn.on {
+  opacity: 1;
+  border-color: rgba(255, 179, 71, 0.55);
+  color: #ffd9a0;
+}
+
+.audio-btn.ghost {
+  background: none;
+  border-color: rgba(255, 226, 186, 0.1);
+}
+
+.audio-now {
+  font-size: 10px;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
