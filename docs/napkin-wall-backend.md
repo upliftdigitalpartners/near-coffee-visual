@@ -174,7 +174,7 @@ It reuses `VITE_WALL_KEY`.
 
 ## Changing it each morning
 
-Supabase → Table Editor → `bake` → edit the `text` cell → Enter. The room picks
+Supabase → Table Editor → `bake` → edit the `text` cell → Enter. The café picks
 it up within fifteen minutes, or immediately on a reload.
 
 Leave it empty and the slate reads "wiped clean", which is a true thing to show

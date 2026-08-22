@@ -1,4 +1,4 @@
-# Moving the room to Vercel
+# Moving the café to Vercel
 
 Target: **room.nearcoffee.space** served by Vercel. The marketing homepage
 stays on GitHub Pages exactly as it is — one CNAME, nothing on the live site
@@ -19,7 +19,7 @@ headers are set, so the import should need no configuration.
 - Production deployed from the CLI, build status Ready.
 - `room.nearcoffee.space` attached to the project.
 - Deployment protection checked: `all_except_custom_domains`. The `.vercel.app`
-  URLs sit behind Vercel SSO, the custom domain does **not**, so the room will
+  URLs sit behind Vercel SSO, the custom domain does **not**, so the café will
   be public the moment DNS resolves. Nothing to change.
 
 Redeploy any time with:

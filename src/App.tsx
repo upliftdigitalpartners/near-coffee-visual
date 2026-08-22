@@ -244,7 +244,7 @@ export default function App() {
           className={`audio-btn ${soundOn ? 'on' : ''}`}
           onClick={toggleSound}
           aria-pressed={soundOn}
-          title={soundOn ? 'silence the room' : 'listen to the room'}
+          title={soundOn ? 'silence the café' : 'listen to the café'}
         >
           {soundOn ? 'sound on' : 'sound off'}
         </button>
@@ -308,7 +308,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="room-note">
+      <div className="presence-note">
         {peers.length === 0
           ? 'you have the place to yourself'
           : peers.length === 1

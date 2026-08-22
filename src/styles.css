@@ -193,7 +193,7 @@ body {
 }
 
 /* Sound controls. Deliberately dull-looking: nothing here should compete
-   with the room, and nothing plays until you ask it to. */
+   with the café, and nothing plays until you ask it to. */
 .audio {
   position: absolute;
   top: clamp(16px, 3vh, 30px);
@@ -301,7 +301,7 @@ body {
 }
 
 /* Who else is here. Sits just above the conditions line. */
-.room-note {
+.presence-note {
   position: absolute;
   bottom: calc(clamp(12px, 2.4vh, 22px) + 16px);
   right: clamp(16px, 3vw, 34px);
@@ -315,7 +315,7 @@ body {
 }
 
 @media (max-width: 640px) {
-  .room-note {
+  .presence-note {
     display: none;
   }
 }

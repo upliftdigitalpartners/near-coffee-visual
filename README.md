@@ -4,7 +4,7 @@ A converted homestead barn below the Tetons, open in a browser tab.
 
 Not a website *about* a coffee shop — a coffee shop that happens to be on the
 internet. You are sitting at a table near the back. The sliding door is open on
-the Teton range, the sun is going down behind it, and the light in the room
+the Teton range, the sun is going down behind it, and the light in the café
 matches the clock on your own wall.
 
 ```bash

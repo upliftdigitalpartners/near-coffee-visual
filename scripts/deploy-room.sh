@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish the room to nearcoffee.space/room
+# Publish the café to nearcoffee.space/room
 #
 # The live site lives in a separate repo (fahimalamwork/near-coffee-space-site)
 # which GitHub Pages serves from main at /. This build goes into room/ there and
