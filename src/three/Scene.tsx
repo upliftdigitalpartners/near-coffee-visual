@@ -9,6 +9,8 @@ import { Barn, BARN } from './Barn'
 import { Backdrop } from './Backdrop'
 import { Fixtures } from './Fixtures'
 import { CameraRig } from './CameraRig'
+import { NapkinWall } from './NapkinWall'
+import type { Napkin } from '../wall/napkins'
 
 const POST = true
 
@@ -149,6 +151,7 @@ export function Scene({
   weather,
   radioLabel,
   onToggleRadio,
+  napkins,
   onProgress,
 }: {
   hour: number
@@ -157,6 +160,7 @@ export function Scene({
   weather?: Weather | null
   radioLabel: string
   onToggleRadio?: () => void
+  napkins: Napkin[]
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
@@ -196,6 +200,7 @@ export function Scene({
       <Snow amount={light.snow} />
 
       <Barn />
+      <NapkinWall napkins={napkins} />
       <Fixtures
         light={light}
         bulbsOn={bulbsOn}

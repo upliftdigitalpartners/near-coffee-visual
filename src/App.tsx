@@ -4,6 +4,14 @@ import { fetchPlace, type Place } from './scene/place'
 import { Scene } from './three/Scene'
 import { Ambience } from './audio/ambience'
 import { Radio } from './audio/radio'
+import {
+  createStore,
+  throttled,
+  clean,
+  MAX_LENGTH,
+  LIFETIME_DAYS,
+  type Napkin,
+} from './wall/napkins'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -29,6 +37,12 @@ export default function App() {
     error?: string
   }>({ playing: false, loading: false })
   const [stationName, setStationName] = useState('')
+
+  const wall = useRef(createStore())
+  const [napkins, setNapkins] = useState<Napkin[]>([])
+  const [writing, setWriting] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [wallNote, setWallNote] = useState('')
 
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
@@ -56,6 +70,42 @@ export default function App() {
       clearInterval(id)
     }
   }, [])
+
+  // The wall, on load. Re-read on a slow timer so notes age out on their own.
+  useEffect(() => {
+    let alive = true
+    const load = () =>
+      wall.current
+        .list()
+        .then((n) => {
+          if (alive) setNapkins(n)
+        })
+        .catch(() => setWallNote('the wall is not answering'))
+    load()
+    const id = setInterval(load, 5 * 60 * 1000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [])
+
+  const pin = useCallback(async () => {
+    const text = clean(draft)
+    if (!text) return
+    if (throttled()) {
+      setWallNote('one note at a time — give it a minute')
+      return
+    }
+    try {
+      await wall.current.add(text)
+      setNapkins(await wall.current.list())
+      setDraft('')
+      setWriting(false)
+      setWallNote('')
+    } catch (e) {
+      setWallNote(e instanceof Error ? e.message : 'could not pin that')
+    }
+  }, [draft])
 
   // Wind at the barn drives the wind in the room.
   useEffect(() => {
@@ -107,6 +157,7 @@ export default function App() {
         weather={place.weather}
         radioLabel={radioState.playing ? 'turn it off' : 'put the radio on'}
         onToggleRadio={toggleRadio}
+        napkins={napkins}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -118,6 +169,43 @@ export default function App() {
       </header>
 
       <div className={`hint ${walked ? 'gone' : ''}`}>scroll to walk to the door</div>
+
+      <div className="wall">
+        {writing ? (
+          <div className="wall-form">
+            <input
+              autoFocus
+              value={draft}
+              maxLength={MAX_LENGTH}
+              placeholder="one line, then it is on the wall"
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void pin()
+                if (e.key === 'Escape') setWriting(false)
+              }}
+              aria-label="Write a note for the wall"
+            />
+            <span className="wall-count">{MAX_LENGTH - draft.length}</span>
+            <button className="audio-btn on" onClick={() => void pin()}>
+              pin it
+            </button>
+            <button className="audio-btn ghost" onClick={() => setWriting(false)}>
+              never mind
+            </button>
+          </div>
+        ) : (
+          <button className="audio-btn" onClick={() => setWriting(true)}>
+            leave a note
+          </button>
+        )}
+        <span className="wall-note">
+          {wallNote ||
+            (napkins.length
+              ? `${napkins.length} on the wall · gone in ${LIFETIME_DAYS} days`
+              : `nothing pinned yet · notes fade after ${LIFETIME_DAYS} days`)}
+          {!wall.current.shared && ' · only you can see these'}
+        </span>
+      </div>
 
       <div className="audio">
         <button

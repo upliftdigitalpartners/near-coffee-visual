@@ -117,10 +117,18 @@ panes keep `document.visibilityState` at `'hidden'`, and browsers do not fire
 the GL context is healthy, and nothing ever draws. That failure looks exactly
 like a broken renderer and is not one. It never runs in a production build.
 
+## The napkin wall
+
+One line each, pinned to the boards beside the door, gone after seven days.
+Notes fade as they age, so the wall always carries a gradient of old and new.
+
+It currently runs **local to each browser** — every behaviour is real except
+the sharing, and the interface says "only you can see these" rather than
+pretending otherwise. Turning it on is two environment variables and no code
+changes: see [docs/napkin-wall-backend.md](docs/napkin-wall-backend.md), which
+also covers the moderation you want in place first.
+
 ## Not built yet
 
-- Ambient sound, and a radio synced so everyone hears the same track at the
-  same timestamp
 - Anonymous silhouettes of whoever else is here right now
-- The napkin wall — one line each, fading after seven days
 - Today's bake

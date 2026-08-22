@@ -243,3 +243,59 @@ body {
   opacity: 0.5;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
+
+/* The napkin wall control. Bottom-left, out of the way of the clock. */
+.wall {
+  position: absolute;
+  bottom: clamp(12px, 2.4vh, 22px);
+  left: clamp(16px, 3vw, 34px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(92vw, 520px);
+}
+
+.wall-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(12, 8, 6, 0.5);
+  border: 1px solid rgba(255, 226, 186, 0.16);
+  border-radius: 999px;
+  padding: 7px 10px 7px 16px;
+  backdrop-filter: blur(7px);
+}
+
+.wall-form input {
+  font-family: inherit;
+  font-size: 13px;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  background: none;
+  border: none;
+  outline: none;
+  color: #f6e5cd;
+  width: min(46vw, 250px);
+}
+
+.wall-form input::placeholder {
+  color: rgba(246, 229, 205, 0.35);
+}
+
+.wall-count {
+  font-size: 10px;
+  opacity: 0.35;
+  min-width: 2ch;
+  text-align: right;
+}
+
+.wall-note {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  opacity: 0.34;
+  pointer-events: none;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
