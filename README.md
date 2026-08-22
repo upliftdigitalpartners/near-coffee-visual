@@ -27,24 +27,25 @@ re-downloads the whole bundle every ten minutes.
 
 ## Where it runs
 
-Live at **https://www.nearcoffee.space/room/**
+Live at **https://room.nearcoffee.space**
 
-The domain is a GitHub Pages site in a separate repo,
-`fahimalamwork/near-coffee-space-site`, whose root is the existing Near Coffee
-page — a single 3.36 MB `index.html`. This build is published into `room/`
-there and touches nothing else, so the homepage is unaffected and the room can
-be removed in one commit.
+Vercel, project `nearcoffee/near-coffee-room`. Redeploy with:
 
 ```bash
-npm run deploy
+npm run deploy:vercel
 ```
 
-That builds, clones the site repo, replaces `room/`, and pushes. It aborts if
-anything outside `room/` has changed — the homepage is not ours to overwrite.
+Pass `--scope nearcoffee` if you ever run the CLI by hand — without it the
+deploy silently re-resolves to a project named after the directory, creates a
+second one, reports success, and changes nothing on the live site.
 
-Because it has to sit under a subpath, Vite uses a relative `base` and the
-photograph is fetched through `import.meta.env.BASE_URL`. An absolute
-`/textures/...` works only at the domain root and 404s everywhere else.
+The marketing homepage stays on GitHub Pages in `fahimalamwork/near-coffee-space-site`
+and links here. The old `/room/` path on that host is now a redirect, so
+anything shared before the move still works.
+
+Vite uses a relative `base` and the photograph is fetched through
+`import.meta.env.BASE_URL`, left over from the subpath days — harmless, and it
+keeps the build servable from anywhere.
 
 ## Where it is
 
