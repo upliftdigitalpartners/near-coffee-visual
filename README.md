@@ -11,6 +11,20 @@ matches the clock on your own wall.
 npm install && npm run dev
 ```
 
+## Caching
+
+`vercel.json` sets the headers GitHub Pages will not let you set, which is the
+main reason to be on Vercel at all. Pages caps *everything* at `max-age=600`,
+including files with a content hash in the name — so a returning visitor
+re-downloads the whole bundle every ten minutes.
+
+- `/assets/*` is `immutable, max-age=31536000`. Safe because Vite puts a
+  content hash in those filenames: a changed file is a changed URL.
+- `/textures/*` gets a week, deliberately **not** immutable. The Teton
+  photograph is served from `public/` with a stable name, so if it is ever
+  replaced an immutable cache would keep serving the old one to everybody who
+  had already loaded it.
+
 ## Where it runs
 
 Live at **https://www.nearcoffee.space/room/**
