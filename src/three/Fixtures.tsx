@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
-import { woodTextures } from './wood'
+import { useWoodMaps, useWoodMaterial } from './wood'
 import type { SceneLight } from './lighting'
 
 /**
@@ -13,19 +13,10 @@ import type { SceneLight } from './lighting'
  * has going for it, which is volume.
  */
 
-function useWoodMaterial(color: string, roughness = 0.85) {
-  const { map, rough } = useMemo(woodTextures, [])
-  return useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map,
-        roughnessMap: rough,
-        roughness,
-        metalness: 0,
-        color: new THREE.Color(color),
-      }),
-    [map, rough, color, roughness],
-  )
+/** Furniture timber, off the same PBR set as the building. */
+function useFurnitureWood(color: string, roughness = 0.85) {
+  const maps = useWoodMaps()
+  return useWoodMaterial(maps, { tint: color, roughness, normalScale: 0.8 })
 }
 
 /**
@@ -218,9 +209,9 @@ export function Fixtures({
   radioLabel: string
   onToggleRadio?: () => void
 }) {
-  const counterTop = useWoodMaterial('#6b543a', 0.7)
-  const carcass = useWoodMaterial('#4a3a28')
-  const tableTop = useWoodMaterial('#7a5f3f', 0.65)
+  const counterTop = useFurnitureWood('#6b543a', 0.7)
+  const carcass = useFurnitureWood('#4a3a28')
+  const tableTop = useFurnitureWood('#7a5f3f', 0.65)
 
   return (
     <group>

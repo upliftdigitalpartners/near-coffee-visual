@@ -1,185 +1,125 @@
+import { useMemo } from 'react'
 import * as THREE from 'three'
+import { useTexture } from '@react-three/drei'
 
 /**
- * Weathered barn board, generated onto a canvas rather than downloaded.
+ * Timber, as real material rather than a drawing of one.
  *
- * A photograph of real siding would be sharper, but it would also be one fixed
- * board repeated across the whole structure, and the eye picks that up fast.
- * Generating it means every plank can have its own grain, its own knots and
- * its own weathering, which is what actually sells a wall of hundred-year-old
- * timber — the variation, not the resolution.
+ * This used to be a canvas: grain and knots painted with 2D calls, applied as
+ * a flat colour map. It was clever and it looked like a cartoon, for a reason
+ * worth writing down — a colour map alone tells the renderer nothing about how
+ * a surface catches light. Every board came back perfectly smooth and equally
+ * shiny, so no matter how good the grain was, the wood read as printed paper.
  *
- * Mormon Row siding is silvered and grey-brown where the sun has had it, with
- * the original warmer wood still showing in the sheltered grain.
+ * What makes wood look like wood is the other three maps:
+ *
+ *   normal      — the grain and the saw marks physically catch the light
+ *   roughness   — worn edges go glossy, dry faces stay matte, unevenly
+ *   AO          — cracks and joins self-shadow instead of glowing
+ *
+ * Source: Poly Haven `dark_wooden_planks`, CC0. See CREDITS.md.
+ *
+ * UVs are in metres, not per-face 0..1, so a plank two metres long shows twice
+ * as much grain as a one-metre one. Getting that wrong is the other classic
+ * tell: every board wearing the identical stretched pattern.
  */
 
-function rng(seed: number) {
+/** World size, in metres, covered by one repeat of the texture. */
+export const TILE_M = 1.35
+
+export type WoodMaps = {
+  map: THREE.Texture
+  normalMap: THREE.Texture
+  roughnessMap: THREE.Texture
+  aoMap: THREE.Texture
+}
+
+export function useWoodMaps(): WoodMaps {
+  const [map, normalMap, roughnessMap, aoMap] = useTexture([
+    `${import.meta.env.BASE_URL}textures/planks/diff_1k.jpg`,
+    `${import.meta.env.BASE_URL}textures/planks/nor_1k.jpg`,
+    `${import.meta.env.BASE_URL}textures/planks/rough_1k.jpg`,
+    `${import.meta.env.BASE_URL}textures/planks/ao_1k.jpg`,
+  ])
+
+  return useMemo(() => {
+    map.colorSpace = THREE.SRGBColorSpace
+    // The other three are data, not colour. Tagging them sRGB washes out the
+    // normals and lifts the roughness, and the wood goes plastic.
+    for (const t of [normalMap, roughnessMap, aoMap]) {
+      t.colorSpace = THREE.NoColorSpace
+    }
+    for (const t of [map, normalMap, roughnessMap, aoMap]) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping
+      t.anisotropy = 8
+    }
+    return { map, normalMap, roughnessMap, aoMap }
+  }, [map, normalMap, roughnessMap, aoMap])
+}
+
+/**
+ * A material off those maps. `tint` shifts the species without needing a
+ * second texture set — barn siding is silvered, floors and furniture are not.
+ */
+export function useWoodMaterial(
+  maps: WoodMaps,
+  opts: { tint?: string; roughness?: number; normalScale?: number; side?: THREE.Side } = {},
+) {
+  const { tint = '#ffffff', roughness = 1, normalScale = 1, side = THREE.FrontSide } = opts
+  return useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        map: maps.map,
+        normalMap: maps.normalMap,
+        roughnessMap: maps.roughnessMap,
+        aoMap: maps.aoMap,
+        aoMapIntensity: 1,
+        color: new THREE.Color(tint),
+        roughness,
+        metalness: 0,
+        normalScale: new THREE.Vector2(normalScale, normalScale),
+        side,
+      }),
+    [maps, tint, roughness, normalScale, side],
+  )
+}
+
+/**
+ * Map a board onto ONE plank of the source texture, running the right way.
+ *
+ * This is the whole difference between wood and masonry, and it caught me out.
+ * The Poly Haven set is a *wall* of roughly nine horizontal planks. Mapping a
+ * board's width across the texture's width and its length up the texture — the
+ * obvious thing — drags each board across all nine, so a seam crosses it every
+ * fifteen centimetres and the wall reads as stone blocks. Which is exactly
+ * what it looked like.
+ *
+ * So the axes are swapped: the board's LENGTH runs along the texture's U, with
+ * the grain, and its WIDTH is squeezed into a single plank's band in V. Each
+ * board then shows continuous lengthwise grain off one real plank, and picking
+ * a different band and offset per board means no two are the same.
+ */
+const BAND = 0.095
+
+export function plankUVs(geom: THREE.BufferGeometry, length: number, seed: number) {
+  const uv = geom.attributes.uv as THREE.BufferAttribute
+  if (!uv) return geom
   let s = seed >>> 0
-  return () => {
+  const rand = () => {
     s = (s * 1664525 + 1013904223) >>> 0
     return s / 4294967296
   }
-}
+  // Land inside a plank rather than straddling a seam.
+  const band = Math.floor(rand() * 9) / 9 + 0.012
+  const along = rand() * 6
+  const su = length / TILE_M
 
-const W = 128
-const H = 1024
-
-/** One board, grain running the long way. */
-function drawBoard(ctx: CanvasRenderingContext2D, seed: number) {
-  const rand = rng(seed)
-
-  /*
-   * Base tone. Barn siding that has stood on Mormon Row for a century is
-   * silver-grey, not brown — the lignin at the surface has gone and taken the
-   * colour with it, leaving warmth only deep in the grain. Keeping the
-   * saturation up here is what makes a build like this read as new cedar
-   * cladding on a rich person's cabin instead of a homestead barn.
-   */
-  const warmth = rand()
-  const base = `hsl(${26 + warmth * 14}, ${3 + warmth * 6}%, ${28 + rand() * 14}%)`
-  ctx.fillStyle = base
-  ctx.fillRect(0, 0, W, H)
-
-  // Grain: long vertical fibres that wander slightly.
-  const lines = 90 + Math.floor(rand() * 70)
-  for (let i = 0; i < lines; i++) {
-    const x = rand() * W
-    const light = rand() > 0.5
-    ctx.strokeStyle = light
-      ? `rgba(196,192,183,${0.05 + rand() * 0.14})`
-      : `rgba(20,17,14,${0.07 + rand() * 0.2})`
-    ctx.lineWidth = 0.4 + rand() * 2.2
-    ctx.beginPath()
-    let y = 0
-    let cx = x
-    ctx.moveTo(cx, y)
-    while (y < H) {
-      y += 24 + rand() * 46
-      cx += (rand() - 0.5) * 5
-      ctx.lineTo(cx, y)
-    }
-    ctx.stroke()
+  for (let i = 0; i < uv.count; i++) {
+    const u = uv.getX(i)
+    const v = uv.getY(i)
+    uv.setXY(i, along + v * su, band + u * BAND)
   }
-
-  // Knots. A board without one looks manufactured.
-  const knots = Math.floor(rand() * 3)
-  for (let k = 0; k < knots; k++) {
-    const kx = 14 + rand() * (W - 28)
-    const ky = rand() * H
-    const kr = 5 + rand() * 9
-    for (let r = kr * 2.6; r > 0; r -= 1.3) {
-      ctx.strokeStyle = `rgba(20,14,10,${0.05 + (1 - r / (kr * 2.6)) * 0.4})`
-      ctx.lineWidth = 0.9
-      ctx.beginPath()
-      ctx.ellipse(kx, ky, r * 0.55, r, 0, 0, Math.PI * 2)
-      ctx.stroke()
-    }
-    ctx.fillStyle = 'rgba(16,11,8,0.75)'
-    ctx.beginPath()
-    ctx.ellipse(kx, ky, kr * 0.3, kr * 0.55, 0, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // Weathering: rain streaks and sun-bleached patches.
-  for (let i = 0; i < 42; i++) {
-    const x = rand() * W
-    const y = rand() * H
-    const h = 40 + rand() * 260
-    const g = ctx.createLinearGradient(0, y, 0, y + h)
-    const bleach = rand() > 0.45
-    g.addColorStop(0, 'rgba(0,0,0,0)')
-    g.addColorStop(
-      0.5,
-      bleach ? `rgba(206,204,197,${0.05 + rand() * 0.13})` : `rgba(15,13,11,${0.06 + rand() * 0.15})`,
-    )
-    g.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = g
-    ctx.fillRect(x, y, 6 + rand() * 26, h)
-  }
-
-  // Split ends and edge wear.
-  ctx.strokeStyle = 'rgba(12,8,6,0.5)'
-  for (let i = 0; i < 5; i++) {
-    ctx.lineWidth = 0.7 + rand() * 1.4
-    const x = rand() * W
-    const y0 = rand() > 0.5 ? 0 : H
-    ctx.beginPath()
-    ctx.moveTo(x, y0)
-    ctx.lineTo(x + (rand() - 0.5) * 8, y0 + (y0 === 0 ? 1 : -1) * (20 + rand() * 90))
-    ctx.stroke()
-  }
-
-  // Darken the long edges so adjoining boards read as separate pieces.
-  const edge = ctx.createLinearGradient(0, 0, W, 0)
-  edge.addColorStop(0, 'rgba(0,0,0,0.5)')
-  edge.addColorStop(0.12, 'rgba(0,0,0,0)')
-  edge.addColorStop(0.88, 'rgba(0,0,0,0)')
-  edge.addColorStop(1, 'rgba(0,0,0,0.55)')
-  ctx.fillStyle = edge
-  ctx.fillRect(0, 0, W, H)
-}
-
-/**
- * An atlas of distinct boards side by side. Meshes pick a column by UV offset,
- * so one texture and one material still gives a wall where no two boards match.
- */
-export const BOARD_VARIANTS = 8
-
-let cached: { map: THREE.CanvasTexture; rough: THREE.CanvasTexture } | null = null
-
-export function woodTextures() {
-  if (cached) return cached
-
-  const canvas = document.createElement('canvas')
-  canvas.width = W * BOARD_VARIANTS
-  canvas.height = H
-  const ctx = canvas.getContext('2d')!
-
-  for (let i = 0; i < BOARD_VARIANTS; i++) {
-    ctx.save()
-    ctx.translate(i * W, 0)
-    ctx.beginPath()
-    ctx.rect(0, 0, W, H)
-    ctx.clip()
-    drawBoard(ctx, 9001 + i * 7919)
-    ctx.restore()
-  }
-
-  const map = new THREE.CanvasTexture(canvas)
-  map.colorSpace = THREE.SRGBColorSpace
-  map.wrapS = THREE.RepeatWrapping
-  map.wrapT = THREE.RepeatWrapping
-  map.anisotropy = 8
-
-  /*
-   * Roughness derived from the same canvas. Weathered timber is almost
-   * entirely matte, so this is a narrow band near the top of the range —
-   * the point is only that the grain catches light unevenly.
-   */
-  const rc = document.createElement('canvas')
-  rc.width = canvas.width
-  rc.height = canvas.height
-  const rctx = rc.getContext('2d')!
-  rctx.drawImage(canvas, 0, 0)
-  rctx.globalCompositeOperation = 'saturation'
-  rctx.fillStyle = '#808080'
-  rctx.fillRect(0, 0, rc.width, rc.height)
-  rctx.globalCompositeOperation = 'source-over'
-  rctx.fillStyle = 'rgba(255,255,255,0.55)'
-  rctx.fillRect(0, 0, rc.width, rc.height)
-
-  const rough = new THREE.CanvasTexture(rc)
-  rough.wrapS = THREE.RepeatWrapping
-  rough.wrapT = THREE.RepeatWrapping
-
-  cached = { map, rough }
-  return cached
-}
-
-/** UV offset that selects one board out of the atlas. */
-export function boardUV(index: number): { offsetX: number; repeatX: number } {
-  return {
-    offsetX: (index % BOARD_VARIANTS) / BOARD_VARIANTS,
-    repeatX: 1 / BOARD_VARIANTS,
-  }
+  uv.needsUpdate = true
+  geom.setAttribute('uv1', uv.clone())
+  return geom
 }

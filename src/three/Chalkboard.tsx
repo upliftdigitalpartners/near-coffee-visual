@@ -35,17 +35,21 @@ export function Chalkboard({ bake }: { bake: Bake | null }) {
 
   return (
     <group position={POS} rotation={[0.03, 0, 0]}>
-      {/* Frame, a little larger than the slate. */}
-      <mesh position={[0, 0, -0.02]} castShadow receiveShadow>
+      {/*
+       * The frame is a box 0.05 deep. Centred at -0.02 its front face lands at
+       * +0.005 — in front of a slate at zero, which hid the board completely
+       * and left a tan rectangle on the wall. The slate now sits proud of it.
+       */}
+      <mesh position={[0, 0, -0.045]} castShadow receiveShadow>
         <boxGeometry args={[WIDTH + 0.11, HEIGHT + 0.11, 0.05]} />
         <primitive object={frame} attach="material" />
       </mesh>
-      <mesh receiveShadow>
+      <mesh position={[0, 0, -0.012]} receiveShadow>
         <planeGeometry args={[WIDTH, HEIGHT]} />
         <meshStandardMaterial map={map} roughness={0.92} metalness={0} />
       </mesh>
       {/* The nail it hangs from. */}
-      <mesh position={[0, HEIGHT / 2 + 0.085, -0.01]}>
+      <mesh position={[0, HEIGHT / 2 + 0.085, -0.005]}>
         <sphereGeometry args={[0.012, 8, 6]} />
         <meshStandardMaterial color="#3a3128" roughness={0.5} metalness={0.4} />
       </mesh>

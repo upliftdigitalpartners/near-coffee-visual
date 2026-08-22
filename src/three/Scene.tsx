@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, N8AO, SMAA } from '@react-three/postprocessing'
+import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import type { Daylight } from '../scene/daylight'
 import type { Solar, Weather } from '../scene/place'
@@ -198,6 +199,25 @@ export function Scene({
       <fogExp2 attach="fog" args={[light.fogColor.getHex(), light.fogDensity]} />
 
       <HiddenDocumentDriver />
+
+      {/*
+       * Image-based lighting, and the single biggest reason this stopped
+       * looking like a cartoon. Three lights can only ever tell a surface
+       * where the sun is; an environment map tells it what the whole sky
+       * looks like from every angle, which is what fills shadows with cold
+       * skylight and puts a real sheen on the mugs.
+       *
+       * background={false} deliberately — the view out the door is the NPS
+       * Teton photograph. This HDRI is a Norwegian winter and is never seen,
+       * only felt. Its intensity rides the daylight model so the room does
+       * not glow at midnight.
+       */}
+      <Environment
+        files={`${import.meta.env.BASE_URL}hdri/bergen_1k.hdr`}
+        background={false}
+        environmentIntensity={light.envIntensity}
+      />
+
       <Lights light={light} />
       <CameraRig onProgress={onProgress} />
 
@@ -207,17 +227,21 @@ export function Scene({
 
       <Snow amount={light.snow} />
 
-      <Barn />
+      <Suspense fallback={null}>
+        <Barn />
+      </Suspense>
       <NapkinWall napkins={napkins} />
       <Chalkboard bake={bake} />
       <Presence peers={peers} light={light} />
-      <Fixtures
+      <Suspense fallback={null}>
+        <Fixtures
         light={light}
         bulbsOn={bulbsOn}
         onToggleBulbs={() => setBulbsOn((v) => !v)}
         radioLabel={radioLabel}
         onToggleRadio={onToggleRadio}
-      />
+        />
+      </Suspense>
 
       {/* Threshold plank worn smooth by a hundred years of boots. */}
       <mesh position={[0, 0.02, BARN.frontZ]} receiveShadow>
@@ -226,9 +250,17 @@ export function Scene({
       </mesh>
 
       {POST && (
-        <EffectComposer multisampling={4}>
-          <Bloom intensity={0.62} luminanceThreshold={0.72} luminanceSmoothing={0.28} mipmapBlur />
-          <Vignette darkness={0.55} offset={0.26} />
+        <EffectComposer multisampling={0} enableNormalPass>
+          {/*
+           * Ambient occlusion first. Contact shadows in the corners, under the
+           * counter and where every board meets its neighbour are what stop
+           * objects looking pasted onto the room — no light rig produces them,
+           * because they are not about light direction at all.
+           */}
+          <N8AO aoRadius={0.55} intensity={2.6} distanceFalloff={0.9} quality="performance" />
+          <Bloom intensity={0.5} luminanceThreshold={0.78} luminanceSmoothing={0.3} mipmapBlur />
+          <Vignette darkness={0.5} offset={0.3} />
+          <SMAA />
         </EffectComposer>
       )}
     </Canvas>

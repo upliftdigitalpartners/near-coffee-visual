@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { BOARD_VARIANTS, boardUV, woodTextures } from './wood'
+import { plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 
 /**
  * The barn.
@@ -42,8 +42,6 @@ export const BARN = {
 
 const BOARD_W = 0.30
 const BOARD_T = 0.045
-/** Texture tiles every this many metres along a board's length. */
-const TILE_M = 2.4
 
 function rng(seed: number) {
   let s = seed >>> 0
@@ -54,29 +52,12 @@ function rng(seed: number) {
 }
 
 /**
- * A box whose UVs are remapped onto one column of the board atlas and tiled
- * along its length, so each board shows different grain.
+ * A board, with its UVs measured in metres and started at a random point in
+ * the texture. Same material everywhere, no two planks alike.
  */
-function board(
-  w: number,
-  h: number,
-  d: number,
-  variant: number,
-  along: 'y' | 'z' = 'y',
-): THREE.BufferGeometry {
+function board(w: number, h: number, d: number, seed: number): THREE.BufferGeometry {
   const g = new THREE.BoxGeometry(w, h, d)
-  const { offsetX, repeatX } = boardUV(variant)
-  const uv = g.attributes.uv as THREE.BufferAttribute
-  const runLength = along === 'y' ? h : d
-  for (let i = 0; i < uv.count; i++) {
-    uv.setXY(
-      i,
-      offsetX + uv.getX(i) * repeatX,
-      uv.getY(i) * (runLength / TILE_M),
-    )
-  }
-  uv.needsUpdate = true
-  return g
+  return plankUVs(g, h, seed * 2654435761)
 }
 
 type Span = { y0: number; y1: number }
@@ -140,7 +121,7 @@ function sideOfBoards(opts: {
       for (const s of spans(top, overlaps, opts.opening)) {
         const h = s.y1 - s.y0
         if (h < 0.08) continue
-        const variant = n % BOARD_VARIANTS
+        const variant = n * 7 + 13
         out.push({
           geom: board(w, h, BOARD_T, variant),
           pos: opts.place(centre, s.y0 + h / 2),
@@ -157,7 +138,7 @@ function sideOfBoards(opts: {
       for (const s of spans(top, overlaps, opts.opening)) {
         const h = s.y1 - s.y0
         if (h < 0.4) continue
-        const variant = (n + 3) % BOARD_VARIANTS
+        const variant = n * 7 + 101
         out.push({
           geom: board(0.085, h, BOARD_T * 1.5, variant),
           pos: opts.place(u, s.y0 + h / 2),
@@ -270,7 +251,7 @@ function useBarnGeometry() {
            * lays the slope down the length of the barn instead of across it,
            * and opens a hole where the roof should meet the gable end.
            */
-          const g = board(0.05, slopeLen, w, n % BOARD_VARIANTS)
+          const g = board(0.05, slopeLen, w, n * 31 + 7)
           g.rotateZ(side * (Math.PI / 2 - pitch))
           g.translate((side * HW) / 2, (eaveY + ridgeY) / 2, z + w / 2)
           roofBoards.push(g)
@@ -289,7 +270,7 @@ function useBarnGeometry() {
     let fn = 0
     while (x < HW) {
       const w = 0.22 * (0.85 + floorRand() * 0.3)
-      const g = board(w, backZ - frontZ, 0.06, fn % BOARD_VARIANTS, 'y')
+      const g = board(w, backZ - frontZ, 0.06, fn * 31 + 5)
       g.rotateX(Math.PI / 2)
       g.translate(x + w / 2, 0.03, (frontZ + backZ) / 2)
       floorBoards.push(g)
@@ -343,37 +324,28 @@ function useBarnGeometry() {
 
 export function Barn() {
   const { walls, roof, floor, frame } = useBarnGeometry()
-  const { map, rough } = useMemo(woodTextures, [])
+  const maps = useWoodMaps()
 
-  const siding = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map,
-        roughnessMap: rough,
-        roughness: 0.94,
-        metalness: 0,
-        side: THREE.DoubleSide,
-      }),
-    [map, rough],
-  )
-
-  const timber = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map,
-        roughnessMap: rough,
-        roughness: 0.9,
-        metalness: 0,
-        color: new THREE.Color('#8a7358'),
-      }),
-    [map, rough],
-  )
+  /*
+   * Three materials off one texture set. Siding is silvered by a century of
+   * weather; the frame and the floor kept more of their colour because they
+   * never saw the sky. The tint does that work so a second 2MB download does
+   * not have to.
+   */
+  const siding = useWoodMaterial(maps, {
+    tint: '#ffffff',
+    roughness: 1,
+    normalScale: 1.35,
+    side: THREE.DoubleSide,
+  })
+  const timber = useWoodMaterial(maps, { tint: '#c4a882', roughness: 0.95, normalScale: 1.1 })
+  const floorMat = useWoodMaterial(maps, { tint: '#b08c5e', roughness: 0.8, normalScale: 0.9 })
 
   return (
     <group>
       {walls && <mesh geometry={walls} material={siding} castShadow receiveShadow />}
       {roof && <mesh geometry={roof} material={siding} castShadow receiveShadow />}
-      <mesh geometry={floor} material={timber} receiveShadow />
+      <mesh geometry={floor} material={floorMat} receiveShadow />
       <mesh geometry={frame} material={timber} castShadow receiveShadow />
     </group>
   )

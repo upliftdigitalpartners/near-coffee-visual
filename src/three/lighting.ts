@@ -41,6 +41,8 @@ export type SceneLight = {
   cloudCover: number
   /** 0–1. Falling snow outside the door. */
   snow: number
+  /** How strongly the sky lights the room. Rides the day, or it glows at 2am. */
+  envIntensity: number
 }
 
 /**
@@ -143,5 +145,11 @@ export function sceneLight(
     sunUp,
     cloudCover: cloud,
     snow,
+    /*
+     * Overcast raises this rather than lowering it: on a grey day the sky IS
+     * the light source, and the room fills with flat skylight instead of a
+     * beam. At night it drops to a trace so the moon and the bulbs carry it.
+     */
+    envIntensity: sunUp ? (0.28 + day * 0.5) * (1 + 0.35 * overcast) : 0.05 + moon * 0.07,
   }
 }
