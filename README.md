@@ -66,6 +66,16 @@ toward the opening. It is a camera move, not a page scroll — there is no page.
 **Things respond.** Pointing at the cup, the radio or the strung bulbs names
 them; the bulbs can be switched on and off.
 
+**The radio goes around the world.** It starts on a hand-picked house set, and
+"elsewhere" moves to another country — Bangladesh, Japan, Senegal, Iceland —
+playing whatever is actually on air there now. Stations come from Radio
+Browser, filtered to HTTPS and to codecs a browser will decode; dead ones are
+walked past automatically, which is most of the work, because community-listed
+streams die constantly.
+
+Not Radio Garden: their station API is undocumented, returns 403 to anything
+that is not their own front end, and publishes no terms permitting use.
+
 ## How it is built
 
 Three.js via React Three Fiber. Real geometry, real lights, real shadows.

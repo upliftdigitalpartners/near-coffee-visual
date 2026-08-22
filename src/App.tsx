@@ -3,7 +3,7 @@ import { daylightAt, localHour } from './scene/daylight'
 import { fetchPlace, type Place } from './scene/place'
 import { Scene } from './three/Scene'
 import { Ambience } from './audio/ambience'
-import { Radio } from './audio/radio'
+import { Radio, type RadioState } from './audio/radio'
 import {
   createStore,
   throttled,
@@ -32,12 +32,7 @@ export default function App() {
   const ambience = useRef<Ambience | null>(null)
   const radio = useRef<Radio | null>(null)
   const [soundOn, setSoundOn] = useState(false)
-  const [radioState, setRadioState] = useState<{
-    playing: boolean
-    loading: boolean
-    error?: string
-  }>({ playing: false, loading: false })
-  const [stationName, setStationName] = useState('')
+  const [radioState, setRadioState] = useState<RadioState>({ playing: false, loading: false })
 
   const wall = useRef(createStore())
   const [napkins, setNapkins] = useState<Napkin[]>([])
@@ -142,15 +137,19 @@ export default function App() {
       setRadioState({ playing: false, loading: false })
       return
     }
-    setStationName(`${r.station.name} · ${r.station.attribution}`)
     void r.play(setRadioState)
   }, [])
 
+  // Somewhere else in the world.
+  const nextPlace = useCallback(() => {
+    if (!radio.current) radio.current = new Radio()
+    void radio.current.nextPlace(setRadioState)
+  }, [])
+
+  // Another station in the same country.
   const nextStation = useCallback(() => {
     if (!radio.current) radio.current = new Radio()
-    const r = radio.current
-    r.next(setRadioState)
-    setStationName(`${r.station.name} · ${r.station.attribution}`)
+    void radio.current.nextStation(setRadioState)
   }, [])
 
   const daylight = useMemo(() => daylightAt(hour, place.solar), [hour, place.solar])
@@ -236,12 +235,23 @@ export default function App() {
           {radioState.loading ? 'tuning…' : radioState.playing ? 'radio on' : 'radio off'}
         </button>
         {(radioState.playing || radioState.error) && (
-          <button className="audio-btn ghost" onClick={nextStation} title="next station">
-            next
-          </button>
+          <>
+            <button className="audio-btn ghost" onClick={nextPlace} title="somewhere else in the world">
+              elsewhere
+            </button>
+            <button className="audio-btn ghost" onClick={nextStation} title="another station here">
+              next
+            </button>
+          </>
         )}
-        {(radioState.playing || radioState.error) && (
-          <span className="audio-now">{radioState.error ?? stationName}</span>
+        {(radioState.playing || radioState.loading || radioState.error) && (
+          <span className="audio-now">
+            {radioState.error
+              ? `${radioState.place ?? ''} — ${radioState.error}`
+              : radioState.playing
+                ? `${radioState.place} · ${radioState.station}`
+                : `tuning ${radioState.place ?? ''}…`}
+          </span>
         )}
       </div>
 
