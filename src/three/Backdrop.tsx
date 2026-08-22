@@ -134,7 +134,9 @@ function snowTexture(): THREE.CanvasTexture {
 }
 
 export function Backdrop({ light }: { light: SceneLight }) {
-  const texture = useTexture('/textures/teton-range.jpg')
+  // BASE_URL, not a leading slash: an absolute path 404s the moment this is
+  // served from anywhere but the domain root, and the barn loses its view.
+  const texture = useTexture(`${import.meta.env.BASE_URL}textures/teton-range.jpg`)
 
   const map = useMemo(() => {
     const t = texture.clone()
