@@ -10,6 +10,8 @@ import { Backdrop } from './Backdrop'
 import { Fixtures } from './Fixtures'
 import { CameraRig } from './CameraRig'
 import { NapkinWall } from './NapkinWall'
+import { Presence } from './Presence'
+import type { Peer } from '../presence/presence'
 import type { Napkin } from '../wall/napkins'
 
 const POST = true
@@ -152,6 +154,7 @@ export function Scene({
   radioLabel,
   onToggleRadio,
   napkins,
+  peers,
   onProgress,
 }: {
   hour: number
@@ -161,6 +164,7 @@ export function Scene({
   radioLabel: string
   onToggleRadio?: () => void
   napkins: Napkin[]
+  peers: Peer[]
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
@@ -201,6 +205,7 @@ export function Scene({
 
       <Barn />
       <NapkinWall napkins={napkins} />
+      <Presence peers={peers} light={light} />
       <Fixtures
         light={light}
         bulbsOn={bulbsOn}

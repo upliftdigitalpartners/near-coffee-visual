@@ -299,3 +299,23 @@ body {
   pointer-events: none;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
 }
+
+/* Who else is here. Sits just above the conditions line. */
+.room-note {
+  position: absolute;
+  bottom: calc(clamp(12px, 2.4vh, 22px) + 16px);
+  right: clamp(16px, 3vw, 34px);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  opacity: 0.34;
+  pointer-events: none;
+  text-align: right;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 640px) {
+  .room-note {
+    display: none;
+  }
+}

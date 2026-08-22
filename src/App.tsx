@@ -12,6 +12,7 @@ import {
   LIFETIME_DAYS,
   type Napkin,
 } from './wall/napkins'
+import { createPresence, type Peer } from './presence/presence'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -44,6 +45,9 @@ export default function App() {
   const [draft, setDraft] = useState('')
   const [wallNote, setWallNote] = useState('')
 
+  const presence = useRef(createPresence())
+  const [peers, setPeers] = useState<Peer[]>([])
+
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
     if (scrubbing) return
@@ -69,6 +73,13 @@ export default function App() {
       alive = false
       clearInterval(id)
     }
+  }, [])
+
+  // Who else is here. Nothing identifying is sent; see presence.ts.
+  useEffect(() => {
+    const p = presence.current
+    p.subscribe(setPeers)
+    return () => p.stop()
   }, [])
 
   // The wall, on load. Re-read on a slow timer so notes age out on their own.
@@ -158,6 +169,7 @@ export default function App() {
         radioLabel={radioState.playing ? 'turn it off' : 'put the radio on'}
         onToggleRadio={toggleRadio}
         napkins={napkins}
+        peers={peers}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -263,6 +275,15 @@ export default function App() {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="room-note">
+        {peers.length === 0
+          ? 'you have the place to yourself'
+          : peers.length === 1
+            ? 'someone else is here'
+            : `${peers.length} others are here`}
+        {!presence.current.shared && ' · this browser only'}
       </div>
 
       {place.solar && (

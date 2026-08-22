@@ -128,7 +128,18 @@ pretending otherwise. Turning it on is two environment variables and no code
 changes: see [docs/napkin-wall-backend.md](docs/napkin-wall-backend.md), which
 also covers the moderation you want in place first.
 
+## Presence
+
+Anonymous silhouettes at the other tables — billboarded dark shapes that fade
+in when someone arrives and are reclaimed when they go. You cannot talk to
+them, name them, or learn anything about them. You just register that the far
+table is taken.
+
+Like the wall, it ships browser-local: `BroadcastChannel` presence is real
+presence, just scoped to your own windows, and the interface says so. See
+[docs/napkin-wall-backend.md](docs/napkin-wall-backend.md) to make it show
+strangers.
+
 ## Not built yet
 
-- Anonymous silhouettes of whoever else is here right now
 - Today's bake
