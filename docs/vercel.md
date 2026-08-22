@@ -13,42 +13,54 @@ Repo: https://github.com/upliftdigitalpartners/near-coffee-visual
 `vercel.json` is already committed — build command, output directory and cache
 headers are set, so the import should need no configuration.
 
-## 1. Connect the repo (yours to do — it needs a login)
+## Done already
 
-Either the dashboard:
+- Project **nearcoffee/near-coffee-room** created under the `nearcoffee` team.
+- Production deployed from the CLI, build status Ready.
+- `room.nearcoffee.space` attached to the project.
+- Deployment protection checked: `all_except_custom_domains`. The `.vercel.app`
+  URLs sit behind Vercel SSO, the custom domain does **not**, so the room will
+  be public the moment DNS resolves. Nothing to change.
 
-1. vercel.com/new
-2. Import `upliftdigitalpartners/near-coffee-visual`
-3. Deploy. Framework, build command and output directory come from
-   `vercel.json`; do not override them.
-
-Or the CLI, from this directory:
+Redeploy any time with:
 
 ```bash
-vercel login
-vercel link
-vercel --prod
+npm run deploy:vercel
 ```
 
-You will get a `*.vercel.app` URL. **Open it and check the room works before
-touching DNS.**
+## 1. The DNS record (yours — I cannot touch Squarespace)
 
-## 2. Add the subdomain
-
-In the Vercel project: Settings → Domains → add `room.nearcoffee.space`.
-
-Vercel will show you a DNS record to create. Then in Squarespace DNS settings
-add exactly what it shows — normally:
+In Squarespace DNS settings, add exactly what Vercel asked for:
 
 | Type | Host | Value |
 | --- | --- | --- |
-| CNAME | `room` | `cname.vercel-dns.com` |
+| A | `room` | `76.76.21.21` |
 
-Use whatever Vercel displays rather than this table if the two disagree; the
-target has changed before.
+Note this is an **A record**, not the CNAME that is usually quoted for
+subdomains. That is what `vercel domains inspect` returned for this domain, so
+use it. Certificates issue automatically a few minutes after it resolves.
 
-Certificates issue automatically once the record resolves. Give it a few
-minutes.
+Check with:
+
+```bash
+dig +short room.nearcoffee.space
+vercel domains inspect room.nearcoffee.space --scope nearcoffee
+```
+
+## 2. Deploys on push — optional, and currently blocked
+
+`vercel git connect` fails for `upliftdigitalpartners/near-coffee-visual`. The
+Vercel GitHub App has not been installed on that organisation, and installing it
+needs an org owner. Your account can push to the repo but does not show up as a
+member of the org, so you may not be able to authorise it yourself.
+
+Three ways out, in the order I would try them:
+
+1. **Do nothing.** `npm run deploy:vercel` works today and is one command.
+2. **Move the repo to `fahimalamwork`**, where the site repo already lives and
+   you clearly have full control. Then `vercel git connect` will just work.
+3. **Ask an owner of `upliftdigitalpartners`** to install the Vercel GitHub App
+   and grant it access to that one repository.
 
 ## 3. Tell me, and I will switch the homepage links
 
