@@ -14,6 +14,7 @@ import { NapkinWall } from './NapkinWall'
 import { Chalkboard } from './Chalkboard'
 import type { Bake } from '../wall/bake'
 import { Presence } from './Presence'
+import { Shafts } from './Shafts'
 import type { Peer } from '../presence/presence'
 import type { Napkin } from '../wall/napkins'
 
@@ -47,7 +48,13 @@ function HiddenDocumentDriver() {
   return null
 }
 
-function Lights({ light }: { light: ReturnType<typeof sceneLight> }) {
+function Lights({
+  light,
+  sun,
+}: {
+  light: ReturnType<typeof sceneLight>
+  sun: React.RefObject<THREE.DirectionalLight | null>
+}) {
   /*
    * The shadow camera is tightened right down onto the barn. A default-sized
    * one spread over the whole 60m backdrop gives texels the size of dinner
@@ -62,6 +69,7 @@ function Lights({ light }: { light: ReturnType<typeof sceneLight> }) {
   return (
     <>
       <directionalLight
+        ref={sun}
         position={light.sunPosition}
         color={light.sunColor}
         intensity={light.sunIntensity}
@@ -136,7 +144,9 @@ function Snow({ amount }: { amount: number }) {
   if (amount <= 0.001) return null
 
   return (
-    <points ref={points} geometry={geometry}>
+    // Kept out of the sun-depth pass: falling snow between the sun and the
+    // barn would flicker a shadow through the room for every flake.
+    <points ref={points} geometry={geometry} userData={{ noShafts: true }}>
       <pointsMaterial
         size={0.055}
         color="#ffffff"
@@ -175,6 +185,7 @@ export function Scene({
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
+  const sun = useRef<THREE.DirectionalLight>(null)
   const light = useMemo(
     () => sceneLight(hour, daylight, solar, weather),
     [hour, daylight, solar, weather],
@@ -220,7 +231,7 @@ export function Scene({
         environmentIntensity={light.envIntensity}
       />
 
-      <Lights light={light} />
+      <Lights light={light} sun={sun} />
       <CameraRig onProgress={onProgress} onStation={onStation} />
 
       <Suspense fallback={null}>
@@ -260,6 +271,13 @@ export function Scene({
            * because they are not about light direction at all.
            */}
           <N8AO aoRadius={0.55} intensity={2.6} distanceFalloff={0.9} quality="performance" />
+          {/*
+           * After occlusion and before bloom, and both matter. Ambient
+           * occlusion describes how much light reaches a surface and has no
+           * business darkening the air in front of it; bloom, on the other
+           * hand, is exactly what a bright shaft should do to a lens.
+           */}
+          <Shafts light={light} />
           <Bloom intensity={0.5} luminanceThreshold={0.78} luminanceSmoothing={0.3} mipmapBlur />
           <Vignette darkness={0.5} offset={0.3} />
           <SMAA />

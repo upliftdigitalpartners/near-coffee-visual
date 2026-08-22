@@ -317,7 +317,13 @@ export function Backdrop({ light }: { light: SceneLight }) {
   )
 
   return (
-    <group>
+    /*
+     * noShafts keeps the whole backdrop out of the sun-depth pass in
+     * Shafts.tsx. The cylinder is 62m across and the sun stands outside it, so
+     * in a depth-from-sun render it covers the barn completely and the entire
+     * interior comes back in shadow.
+     */
+    <group userData={{ noShafts: true }}>
       {/*
        * Unlit on purpose. It is a photograph of a mountain range ten miles
        * off; lighting it would be lighting a picture of light.
