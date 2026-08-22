@@ -18,24 +18,67 @@ import * as THREE from 'three'
  */
 
 /**
- * Sitting at a table at the back, and standing just short of the doorway.
+ * Where you can be, in order.
  *
- * The end of the walk deliberately stops *inside* the barn. Taking it all the
- * way to the threshold puts the whole building behind you and leaves nothing
- * on screen but the photograph, which throws away the only thing that makes
- * the view worth anything — the doorway around it.
+ * One scroll used to take you from the table to the door and that was the
+ * whole building — which meant most of the barn was scenery you could never
+ * turn to look at. Now scrolling walks a route, and each stop is a place
+ * somebody would actually stand: your table, the counter where the coffee
+ * happens, the wall people leave notes on, and finally the doorway.
+ *
+ * Positions are eased and damped between, so it reads as walking rather than
+ * cutting. Stops are deliberately unevenly spaced along the scroll — the
+ * distance between the counter and the wall is short in the room and short on
+ * the wheel too.
  */
-const SEATED = new THREE.Vector3(0.9, 1.22, 4.3)
-const DOORWAY = new THREE.Vector3(0, 1.52, 0.6)
+type Station = {
+  /** Where the camera stands. */
+  at: THREE.Vector3
+  /** What it is looking at. */
+  look: THREE.Vector3
+  /** Name, shown quietly while you are there. */
+  label: string
+}
 
-const LOOK_SEATED = new THREE.Vector3(-0.2, 1.5, -6)
-const LOOK_DOORWAY = new THREE.Vector3(0, 1.85, -30)
+const STATIONS: Station[] = [
+  {
+    at: new THREE.Vector3(0.9, 1.22, 4.3),
+    look: new THREE.Vector3(-0.2, 1.5, -6),
+    label: 'your table',
+  },
+  {
+    at: new THREE.Vector3(1.9, 1.5, 2.6),
+    look: new THREE.Vector3(5.2, 1.35, 1.4),
+    label: 'the counter',
+  },
+  {
+    at: new THREE.Vector3(-1.1, 1.5, 0.4),
+    look: new THREE.Vector3(-5.4, 1.9, -3.6),
+    label: 'the wall',
+  },
+  {
+    at: new THREE.Vector3(2.2, 1.5, -0.6),
+    look: new THREE.Vector3(4.6, 2.3, -3.9),
+    label: "today's bake",
+  },
+  {
+    at: new THREE.Vector3(0, 1.52, 0.6),
+    look: new THREE.Vector3(0, 1.85, -30),
+    label: 'the doorway',
+  },
+]
 
 /** How far the pointer can swing the view, in radians. */
 const YAW_RANGE = 0.26
 const PITCH_RANGE = 0.14
 
-export function CameraRig({ onProgress }: { onProgress?: (p: number) => void }) {
+export function CameraRig({
+  onProgress,
+  onStation,
+}: {
+  onProgress?: (p: number) => void
+  onStation?: (label: string) => void
+}) {
   const { camera } = useThree()
 
   const pointer = useRef({ x: 0, y: 0 })
@@ -44,12 +87,13 @@ export function CameraRig({ onProgress }: { onProgress?: (p: number) => void }) 
   const progress = useRef(0)
   const velocity = useRef(0)
 
-  const position = useRef(SEATED.clone())
-  const lookAt = useRef(LOOK_SEATED.clone())
+  const position = useRef(STATIONS[0].at.clone())
+  const lookAt = useRef(STATIONS[0].look.clone())
+  const lastLabel = useRef('')
 
   useEffect(() => {
-    camera.position.copy(SEATED)
-    camera.lookAt(LOOK_SEATED)
+    camera.position.copy(STATIONS[0].at)
+    camera.lookAt(STATIONS[0].look)
   }, [camera])
 
   useEffect(() => {
@@ -68,7 +112,7 @@ export function CameraRig({ onProgress }: { onProgress?: (p: number) => void }) 
      * and coasts to a stop instead of stopping dead with your fingers.
      */
     const onWheel = (e: WheelEvent) => {
-      velocity.current += e.deltaY * 0.00035
+      velocity.current += e.deltaY * 0.00022
     }
 
     let touchY: number | null = null
@@ -78,7 +122,7 @@ export function CameraRig({ onProgress }: { onProgress?: (p: number) => void }) 
     const onTouchMove = (e: TouchEvent) => {
       const y = e.touches[0]?.clientY
       if (y == null || touchY == null) return
-      velocity.current += (touchY - y) * 0.0016
+      velocity.current += (touchY - y) * 0.0010
       touchY = y
       // Tilt the view with the thumb, since there is no pointer on a phone.
       pointer.current = {
@@ -117,11 +161,24 @@ export function CameraRig({ onProgress }: { onProgress?: (p: number) => void }) 
     progress.current = THREE.MathUtils.damp(progress.current, targetProgress.current, 3.2, dt)
     onProgress?.(progress.current)
 
-    // Ease the walk so it settles into each end rather than arriving flat.
-    const p = progress.current * progress.current * (3 - 2 * progress.current)
+    /*
+     * Walk the station list. The eased fraction is taken *within* each leg
+     * rather than across the whole route, so the camera settles into every
+     * stop instead of gliding through the middle ones at speed.
+     */
+    const legs = STATIONS.length - 1
+    const scaled = THREE.MathUtils.clamp(progress.current, 0, 1) * legs
+    const i = Math.min(Math.floor(scaled), legs - 1)
+    const raw = scaled - i
+    const p = raw * raw * (3 - 2 * raw)
 
-    position.current.lerpVectors(SEATED, DOORWAY, p)
-    lookAt.current.lerpVectors(LOOK_SEATED, LOOK_DOORWAY, p)
+    position.current.lerpVectors(STATIONS[i].at, STATIONS[i + 1].at, p)
+    lookAt.current.lerpVectors(STATIONS[i].look, STATIONS[i + 1].look, p)
+    const label = p < 0.5 ? STATIONS[i].label : STATIONS[i + 1].label
+    if (label !== lastLabel.current) {
+      lastLabel.current = label
+      onStation?.(label)
+    }
 
     smoothed.current.x = THREE.MathUtils.damp(smoothed.current.x, pointer.current.x, 2.6, dt)
     smoothed.current.y = THREE.MathUtils.damp(smoothed.current.y, pointer.current.y, 2.6, dt)

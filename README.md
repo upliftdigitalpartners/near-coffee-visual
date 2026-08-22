@@ -61,8 +61,11 @@ and the entire range standing behind it with no foothills in the way.
 local clock, through a full sunrise-to-night model. The clock at the bottom of
 the screen opens a scrubber so you can walk the whole day without waiting.
 
-**You can walk to the door.** Scrolling dollies the camera from the table up
-toward the opening. It is a camera move, not a page scroll — there is no page.
+**You can walk through it.** Scrolling walks a route of five stops — your
+table, the counter, the napkin wall, the chalkboard, the doorway — easing
+*within* each leg so the camera settles at every stop rather than gliding
+through the middle ones. It is a camera move, not a page scroll; there is no
+page.
 
 **Things respond.** Pointing at the cup, the radio or the strung bulbs names
 them; the bulbs can be switched on and off.

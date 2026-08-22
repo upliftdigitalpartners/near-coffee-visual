@@ -45,6 +45,7 @@ export default function App() {
   const [peers, setPeers] = useState<Peer[]>([])
 
   const [bake, setBake] = useState<Bake | null>(null)
+  const [station, setStation] = useState('your table')
 
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
@@ -185,6 +186,7 @@ export default function App() {
         napkins={napkins}
         peers={peers}
         bake={bake}
+        onStation={setStation}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -195,7 +197,8 @@ export default function App() {
         <p>a barn on mormon row · open whenever you are</p>
       </header>
 
-      <div className={`hint ${walked ? 'gone' : ''}`}>scroll to walk to the door</div>
+      <div className={`hint ${walked ? 'gone' : ''}`}>scroll to walk through</div>
+      <div className={`station ${walked ? 'shown' : ''}`}>{station}</div>
 
       <div className="wall">
         {writing ? (

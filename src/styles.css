@@ -319,3 +319,22 @@ body {
     display: none;
   }
 }
+
+/* Where you are standing. Appears once you start walking, not before. */
+.station {
+  position: absolute;
+  bottom: clamp(58px, 9vh, 84px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: lowercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
+}
+
+.station.shown {
+  opacity: 0.5;
+}

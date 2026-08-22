@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { plankUVs, useWoodMaps, useWoodMaterial } from './wood'
+import { chamferedBox, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 
 /**
  * The barn.
@@ -56,8 +56,7 @@ function rng(seed: number) {
  * the texture. Same material everywhere, no two planks alike.
  */
 function board(w: number, h: number, d: number, seed: number): THREE.BufferGeometry {
-  const g = new THREE.BoxGeometry(w, h, d)
-  return plankUVs(g, h, seed * 2654435761)
+  return plankUVs(chamferedBox(w, h, d), h, seed * 2654435761)
 }
 
 type Span = { y0: number; y1: number }

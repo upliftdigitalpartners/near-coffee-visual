@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import type { SceneLight } from './lighting'
 
 /**
@@ -151,6 +152,67 @@ export function Backdrop({ light }: { light: SceneLight }) {
 
   const ground = useMemo(snowTexture, [])
 
+  /*
+   * The plate, graded in the shader rather than tinted.
+   *
+   * A colour multiply can only ever darken; it cannot desaturate a blue sky
+   * toward dusk or push midday light warm. This injects a small grade after
+   * the texture is sampled — exposure, saturation, and a lean toward whatever
+   * colour the sun currently is — which is what actually lets a bright noon
+   * photograph sit inside a dim evening room without looking pasted in.
+   */
+  const grade = useRef({
+    uExposure: { value: 1 },
+    uSaturation: { value: 1 },
+    uTint: { value: new THREE.Color('#ffffff') },
+    uTintAmount: { value: 0 },
+    uLift: { value: 0 },
+  })
+
+  const plate = useMemo(() => {
+    const m = new THREE.MeshBasicMaterial({
+      map,
+      side: THREE.BackSide,
+      fog: false,
+      toneMapped: false,
+    })
+    m.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, grade.current)
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <common>',
+          `#include <common>
+           uniform float uExposure;
+           uniform float uSaturation;
+           uniform vec3  uTint;
+           uniform float uTintAmount;
+           uniform float uLift;`,
+        )
+        .replace(
+          '#include <map_fragment>',
+          `#include <map_fragment>
+           {
+             vec3 c = diffuseColor.rgb;
+             float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+             c = mix(vec3(l), c, uSaturation);
+             c = mix(c, uTint * l, uTintAmount);
+             diffuseColor.rgb = c * uExposure + uLift;
+           }`,
+        )
+    }
+    return m
+  }, [map])
+
+  // Push the grade every frame; the day moves and so does the plate.
+  useFrame(() => {
+    const g = light.backdropGrade
+    grade.current.uExposure.value = g.exposure
+    grade.current.uSaturation.value = g.saturation
+    grade.current.uTint.value.copy(g.tint)
+    grade.current.uTintAmount.value = g.tintAmount
+    grade.current.uLift.value = g.lift
+  })
+
   const geometry = useMemo(
     () =>
       new THREE.CylinderGeometry(
@@ -172,15 +234,7 @@ export function Backdrop({ light }: { light: SceneLight }) {
        * Unlit on purpose. It is a photograph of a mountain range ten miles
        * off; lighting it would be lighting a picture of light.
        */}
-      <mesh geometry={geometry} position={[0, CENTRE_Y, 0]}>
-        <meshBasicMaterial
-          map={map}
-          side={THREE.BackSide}
-          color={light.backdropTint}
-          fog={false}
-          toneMapped={false}
-        />
-      </mesh>
+      <mesh geometry={geometry} position={[0, CENTRE_Y, 0]} material={plate} />
 
       {/*
        * Valley floor, running out to meet the bottom of the photograph. Unlit

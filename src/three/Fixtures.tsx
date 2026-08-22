@@ -330,6 +330,139 @@ export function Fixtures({
         ))}
       </Interactive>
 
+      {/*
+       * The rest of the café. The route now stops at the counter and the wall,
+       * so what used to be distant scenery is somewhere you stand — and an
+       * empty room at arm's length reads as a set rather than a shop.
+       */}
+
+      {/* Espresso machine and grinder on the counter. */}
+      <group position={[4.0, 1.1, -0.4]}>
+        <mesh position={[0, 0.17, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.52, 0.34, 0.7]} />
+          <meshStandardMaterial color="#20242a" roughness={0.35} metalness={0.75} />
+        </mesh>
+        <mesh position={[0, 0.36, 0]} castShadow>
+          <boxGeometry args={[0.46, 0.06, 0.62]} />
+          <meshStandardMaterial color="#b9782f" roughness={0.28} metalness={0.9} />
+        </mesh>
+        {[-0.18, 0.18].map((z) => (
+          <mesh key={z} position={[-0.28, 0.1, z]} rotation={[0, 0, Math.PI / 2]} castShadow>
+            <cylinderGeometry args={[0.022, 0.022, 0.16, 12]} />
+            <meshStandardMaterial color="#7d838a" roughness={0.3} metalness={0.85} />
+          </mesh>
+        ))}
+        <mesh position={[0.05, 0.24, -0.52]} castShadow>
+          <cylinderGeometry args={[0.1, 0.12, 0.48, 18]} />
+          <meshStandardMaterial color="#2a2e33" roughness={0.4} metalness={0.6} />
+        </mesh>
+        <mesh position={[0.05, 0.52, -0.52]} castShadow>
+          <coneGeometry args={[0.11, 0.2, 18]} />
+          <meshStandardMaterial color="#3a2a1c" roughness={0.5} metalness={0.2} transparent opacity={0.8} />
+        </mesh>
+      </group>
+
+      {/* Pastry dome, and what is under it. */}
+      <group position={[4.0, 1.14, 2.3]}>
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.2, 0.2, 0.03, 26]} />
+          <primitive object={counterTop} attach="material" />
+        </mesh>
+        {[[-0.07, 0.04], [0.06, -0.05], [0.02, 0.08]].map(([x, z], i) => (
+          <mesh key={i} position={[x, 0.07, z]} rotation={[0, i * 1.1, 0]} castShadow>
+            <capsuleGeometry args={[0.035, 0.05, 4, 10]} />
+            <meshStandardMaterial color="#a8712f" roughness={0.72} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.14, 0]}>
+          <sphereGeometry args={[0.21, 22, 14, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshPhysicalMaterial
+            color="#ffffff"
+            roughness={0.06}
+            metalness={0}
+            transmission={0.92}
+            thickness={0.02}
+            ior={1.5}
+            transparent
+          />
+        </mesh>
+      </group>
+
+      {/* Sacks of green coffee behind the counter. */}
+      {[[5.3, 0.3, -1.5], [5.35, 0.3, -1.05], [5.25, 0.86, -1.3]].map(([x, y, z], i) => (
+        <mesh key={i} position={[x, y, z]} rotation={[0, i * 0.7, i === 2 ? 0.12 : 0]} castShadow receiveShadow>
+          <capsuleGeometry args={[0.24, 0.3, 4, 12]} />
+          <meshStandardMaterial color="#9c8d6f" roughness={0.95} />
+        </mesh>
+      ))}
+
+      {/* Two more tables down the room, with stools. */}
+      {[
+        { at: [-3.4, 0, 3.4] as const, r: 0.5 },
+        { at: [3.0, 0, 4.2] as const, r: 0.55 },
+      ].map((t, i) => (
+        <group key={i} position={[t.at[0], t.at[1], t.at[2]]}>
+          <mesh position={[0, 0.74, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[t.r, t.r, 0.06, 24]} />
+            <primitive object={tableTop} attach="material" />
+          </mesh>
+          <mesh position={[0, 0.36, 0]} castShadow>
+            <cylinderGeometry args={[0.07, 0.1, 0.72, 12]} />
+            <primitive object={carcass} attach="material" />
+          </mesh>
+          {[0.6, 2.4, 4.3].map((a, j) => (
+            <group key={j} position={[Math.cos(a) * 0.95, 0, Math.sin(a) * 0.95]}>
+              <mesh position={[0, 0.44, 0]} castShadow>
+                <cylinderGeometry args={[0.17, 0.15, 0.06, 16]} />
+                <primitive object={tableTop} attach="material" />
+              </mesh>
+              {[0.8, 2.9, 5.0].map((b, k) => (
+                <mesh key={k} position={[Math.cos(b) * 0.11, 0.21, Math.sin(b) * 0.11]} castShadow>
+                  <cylinderGeometry args={[0.018, 0.022, 0.42, 8]} />
+                  <primitive object={carcass} attach="material" />
+                </mesh>
+              ))}
+            </group>
+          ))}
+        </group>
+      ))}
+
+      {/* A bench along the south wall. */}
+      <group position={[-5.5, 0, 2.2]}>
+        <mesh position={[0, 0.46, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.5, 0.07, 3.2]} />
+          <primitive object={tableTop} attach="material" />
+        </mesh>
+        <mesh position={[-0.18, 0.9, 0]} castShadow>
+          <boxGeometry args={[0.08, 0.8, 3.2]} />
+          <primitive object={carcass} attach="material" />
+        </mesh>
+        {[-1.4, 0, 1.4].map((z) => (
+          <mesh key={z} position={[0, 0.22, z]} castShadow>
+            <boxGeometry args={[0.42, 0.44, 0.09]} />
+            <primitive object={carcass} attach="material" />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Firewood stacked by the stove. */}
+      {Array.from({ length: 14 }, (_, i) => {
+        const row = Math.floor(i / 5)
+        const col = i % 5
+        return (
+          <mesh
+            key={i}
+            position={[-5.2 + col * 0.005, 0.09 + row * 0.16, 3.0 + col * 0.17]}
+            rotation={[0, 0, Math.PI / 2]}
+            castShadow
+            receiveShadow
+          >
+            <cylinderGeometry args={[0.075, 0.085, 0.42, 9]} />
+            <primitive object={carcass} attach="material" />
+          </mesh>
+        )
+      })}
+
       {/* Wood stove in the corner — the reason the place is habitable. */}
       <group position={[-4.4, 0, 4.2]}>
         <mesh position={[0, 0.5, 0]} castShadow receiveShadow>

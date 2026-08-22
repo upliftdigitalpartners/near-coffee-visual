@@ -43,6 +43,23 @@ export type SceneLight = {
   snow: number
   /** How strongly the sky lights the room. Rides the day, or it glows at 2am. */
   envIntensity: number
+  /**
+   * Colour grade applied to the Teton photograph.
+   *
+   * The plate is a bright clear midday shot and the room is very often not.
+   * Multiplying it by a tint — which is all it used to get — cannot make noon
+   * look like dusk: it just makes noon darker, and the mismatch between a
+   * crisp blue photograph and a warm dim room reads as fake even when nobody
+   * can say why. Exposure, saturation and a push toward the sun's own colour
+   * do the job a colourist would.
+   */
+  backdropGrade: {
+    exposure: number
+    saturation: number
+    tint: THREE.Color
+    tintAmount: number
+    lift: number
+  }
 }
 
 /**
@@ -126,6 +143,22 @@ export function sceneLight(
     .multiplyScalar(sunUp ? 0.55 + day * 0.65 : 0.16 + moon * 0.1)
     .lerp(new THREE.Color('#8d949c'), overcast * 0.4)
 
+  /*
+   * Grading the plate. Night is the big one: a photograph does not just get
+   * darker after sunset, it loses nearly all its colour and goes blue, and
+   * without that the mountains stay stubbornly sunlit at midnight.
+   */
+  const gradeTint = sunUp
+    ? new THREE.Color(light.shaftColor)
+    : new THREE.Color('#4c6a9c')
+  const backdropGrade = {
+    exposure: sunUp ? (0.35 + day * 0.75) * (1 - 0.25 * overcast) : 0.1 + moon * 0.12,
+    saturation: sunUp ? 1 - 0.3 * overcast - 0.15 * lowSun : 0.3,
+    tint: gradeTint,
+    tintAmount: sunUp ? 0.1 + lowSun * 0.4 : 0.55,
+    lift: sunUp ? 0.01 * overcast : 0.012,
+  }
+
   /* Snowfall arrives in cm per interval; anything at all is worth drawing. */
   const snow = THREE.MathUtils.clamp((weather?.snowfallCm ?? 0) / 0.4, 0, 1)
 
@@ -151,5 +184,6 @@ export function sceneLight(
      * beam. At night it drops to a trace so the moon and the bulbs carry it.
      */
     envIntensity: sunUp ? (0.28 + day * 0.5) * (1 + 0.35 * overcast) : 0.05 + moon * 0.07,
+    backdropGrade,
   }
 }

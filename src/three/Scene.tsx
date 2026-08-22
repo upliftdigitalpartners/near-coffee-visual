@@ -159,6 +159,7 @@ export function Scene({
   napkins,
   peers,
   bake,
+  onStation,
   onProgress,
 }: {
   hour: number
@@ -170,6 +171,7 @@ export function Scene({
   napkins: Napkin[]
   peers: Peer[]
   bake: Bake | null
+  onStation?: (label: string) => void
   onProgress?: (p: number) => void
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
@@ -219,7 +221,7 @@ export function Scene({
       />
 
       <Lights light={light} />
-      <CameraRig onProgress={onProgress} />
+      <CameraRig onProgress={onProgress} onStation={onStation} />
 
       <Suspense fallback={null}>
         <Backdrop light={light} />

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { useTexture } from '@react-three/drei'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 
 /**
  * Timber, as real material rather than a drawing of one.
@@ -122,4 +123,25 @@ export function plankUVs(geom: THREE.BufferGeometry, length: number, seed: numbe
   uv.needsUpdate = true
   geom.setAttribute('uv1', uv.clone())
   return geom
+}
+
+
+/**
+ * A board with its edges taken off.
+ *
+ * The loudest remaining "this is CG" signal was that every edge in the room
+ * was a perfect 90 degrees. Real sawn timber has an arris — worn, chamfered,
+ * slightly rounded — and that edge catches a thin highlight from whatever the
+ * brightest thing in the room is. Without it a plank has no silhouette, just a
+ * hard line, and the eye reads it as a rectangle rather than an object.
+ *
+ * Kept to a 1-segment chamfer rather than a smooth radius: it is roughly ten
+ * times the triangles of a plain box, and there are several hundred boards, so
+ * the difference between a chamfer and a fillet is the difference between this
+ * running on a phone and not. At 3mm across a 300mm board the eye cannot tell
+ * them apart anyway — it only needs the highlight.
+ */
+export function chamferedBox(w: number, h: number, d: number, bevel = 0.004) {
+  const r = Math.min(bevel, w / 2.5, h / 2.5, d / 2.5)
+  return new RoundedBoxGeometry(w, h, d, 1, r)
 }
