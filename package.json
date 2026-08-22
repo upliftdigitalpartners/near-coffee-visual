@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "deploy": "bash scripts/deploy-room.sh",
-    "deploy:vercel": "vercel --prod --yes"
+    "deploy:vercel": "vercel --prod --yes --scope nearcoffee"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
