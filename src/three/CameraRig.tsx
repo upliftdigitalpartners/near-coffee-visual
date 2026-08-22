@@ -42,29 +42,87 @@ type Station = {
 }
 
 const STATIONS: Station[] = [
+  /*
+   * Your table. You are sitting at it, so the cup belongs in the lower third
+   * and the door beyond it — the shot is "over my coffee, out at the range".
+   *
+   * The camera used to sit level and aim slightly *up*, which put the cup at
+   * 20 degrees below centre against a 23 degree half-frame: it was clipped by
+   * the bottom edge, and a bulb hung in the top of frame with nothing to do.
+   * Standing a little taller and looking four degrees down puts the whole cup
+   * and its saucer inside the frame, drops the bulb out of it, and lets the
+   * floor between here and the door — which is where the light actually is —
+   * carry the middle of the picture.
+   */
   {
-    at: new THREE.Vector3(0.9, 1.22, 4.3),
-    look: new THREE.Vector3(-0.2, 1.5, -6),
+    at: new THREE.Vector3(0.85, 1.3, 4.55),
+    look: new THREE.Vector3(0.05, 0.72, -3.5),
     label: 'your table',
   },
+  /*
+   * The counter, looked at *along* rather than across.
+   *
+   * Square on from two and a half metres, the bottom forty per cent of the
+   * frame was the unlit front of the counter — a black band — and the espresso
+   * machine, the one thing that makes a counter a counter, was cut in half by
+   * the left edge. Standing further back and off the end turns the slab into a
+   * line running away from you: pastry case near and right, machine on the
+   * axis at four metres, the back shelf and its cups behind it.
+   */
   {
-    at: new THREE.Vector3(1.9, 1.5, 2.6),
-    look: new THREE.Vector3(5.2, 1.35, 1.4),
+    at: new THREE.Vector3(2.9, 1.6, 3.6),
+    look: new THREE.Vector3(4.2, 1.15, -0.8),
     label: 'the counter',
   },
+  /*
+   * The napkin wall. The old aim was at the *corner* of the room, past the end
+   * of the notes, so the shot was a documentary photograph of empty siding.
+   * This looks at the middle of the pinned area from three and a half metres,
+   * far enough back that the whole strip of wall — 1.15m to 3.1m up — is
+   * inside the frame, and off to one side so it is a wall in a room rather
+   * than a flat swatch held up to the lens. Three metres, not four: notes fill
+   * the pinned area from the bottom up, so on a quiet week the top of a
+   * further-back frame is all empty siding.
+   */
   {
-    at: new THREE.Vector3(-1.1, 1.5, 0.4),
-    look: new THREE.Vector3(-5.4, 1.9, -3.6),
+    at: new THREE.Vector3(-2.45, 1.55, -1.35),
+    look: new THREE.Vector3(-3.9, 1.88, -3.91),
     label: 'the wall',
   },
+  /*
+   * The board. It was three metres away and nearly forty degrees off its own
+   * axis, so it keystoned into a trapezoid and read as a poster peeling off
+   * the wall. Standing more nearly square to it — half a metre off centre
+   * instead of two — leaves only the keystone you would actually get from
+   * looking up at something hung above head height, which is the honest one.
+   * The right jamb of the door stays just inside the left edge, so the light
+   * falling across the slate has a visible source.
+   */
   {
-    at: new THREE.Vector3(2.2, 1.5, -0.6),
-    look: new THREE.Vector3(4.6, 2.3, -3.9),
+    at: new THREE.Vector3(3.05, 1.62, -0.85),
+    look: new THREE.Vector3(3.5, 2.08, -3.89),
     label: "today's bake",
   },
+  /*
+   * The doorway — and deliberately not down the middle of it.
+   *
+   * Standing on the axis at 4.6m, the opening filled the frame edge to edge
+   * and perfectly symmetrically, which is the failure the README warns about:
+   * the barn stops framing anything and you are looking at an unframed
+   * photograph. From back here and a metre off the centre line the door falls
+   * left of centre and takes about half the width, the napkin wall closes the
+   * left edge, the chalkboard closes the right, and the stripes the sun lays
+   * down the floor run between them into the opening.
+   *
+   * The four and a half degrees of downward pitch are not taste. Level, the
+   * nearest ceiling bulb lands at 21.7 degrees up against a 23 degree
+   * half-frame and is sliced in half by the top edge — a bright clipped blob
+   * with nothing attached to it. This drops it clear and buys more of the
+   * floor, which at this hour is the best thing in the shot anyway.
+   */
   {
-    at: new THREE.Vector3(0, 1.52, 0.6),
-    look: new THREE.Vector3(0, 1.85, -30),
+    at: new THREE.Vector3(2.3, 1.62, 2.9),
+    look: new THREE.Vector3(0.6, 1.02, -5.5),
     label: 'the doorway',
   },
 ]

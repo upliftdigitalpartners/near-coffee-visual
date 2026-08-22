@@ -39,3 +39,42 @@ export function forcedStop(): number | null {
 export function frozen(): boolean {
   return forcedStop() != null
 }
+
+/**
+ * Stand-in notes for the wall, via `?napkins=12`.
+ *
+ * The napkin wall cannot be framed against an empty wall — the whole question
+ * is where the block of notes sits in the picture, and with none pinned the
+ * answer is always "nowhere". This fills it with plausible traffic so the
+ * composition can be judged. It also covers the case where the backend is
+ * simply unreachable, which is any environment without the Supabase keys.
+ */
+const STANDINS = [
+  'first one here, as usual',
+  'the light at four is the reason',
+  'left my gloves on the bench — keeping them warm',
+  'told my brother about this place',
+  'snowing again',
+  'best flat white in the county, admittedly a small county',
+  'reading the same page over and over',
+  'came for the wifi, stayed for the stove',
+  'moose on the road at dawn',
+  'back thursday',
+  'my daughter drew the barn on a napkin, it is here somewhere',
+  'thank you for staying open late',
+  'the radio was playing something Malian',
+  'quiet enough to hear the boards move',
+]
+
+export function standInNapkins(): { id: string; text: string; at: number }[] | null {
+  const v = params()?.get('napkins')
+  if (v == null) return null
+  const n = Math.max(0, Math.min(Number(v) || 0, STANDINS.length))
+  const now = Date.now()
+  return Array.from({ length: n }, (_, i) => ({
+    id: `standin-${i}`,
+    text: STANDINS[i],
+    // Spread across the seven-day lifetime so the wall shows its age gradient.
+    at: now - (i / Math.max(1, n)) * 6.2 * 86400_000,
+  }))
+}

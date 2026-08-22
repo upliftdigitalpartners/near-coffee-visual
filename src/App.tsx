@@ -14,7 +14,7 @@ import {
 } from './wall/napkins'
 import { createPresence, type Peer } from './presence/presence'
 import { fetchBake, type Bake } from './wall/bake'
-import { forcedHour } from './scene/debug'
+import { forcedHour, standInNapkins } from './scene/debug'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -37,7 +37,7 @@ export default function App() {
   const [radioState, setRadioState] = useState<RadioState>({ playing: false, loading: false })
 
   const wall = useRef(createStore())
-  const [napkins, setNapkins] = useState<Napkin[]>([])
+  const [napkins, setNapkins] = useState<Napkin[]>(() => standInNapkins() ?? [])
   const [writing, setWriting] = useState(false)
   const [draft, setDraft] = useState('')
   const [wallNote, setWallNote] = useState('')
@@ -97,6 +97,7 @@ export default function App() {
   // The wall, on load. Re-read on a slow timer so notes age out on their own.
   useEffect(() => {
     let alive = true
+    if (standInNapkins()) return
     const load = () =>
       wall.current
         .list()
