@@ -136,11 +136,11 @@ like a broken renderer and is not one. It never runs in a production build.
 One line each, pinned to the boards beside the door, gone after seven days.
 Notes fade as they age, so the wall always carries a gradient of old and new.
 
-It currently runs **local to each browser** — every behaviour is real except
-the sharing, and the interface says "only you can see these" rather than
-pretending otherwise. Turning it on is two environment variables and no code
-changes: see [docs/napkin-wall-backend.md](docs/napkin-wall-backend.md), which
-also covers the moderation you want in place first.
+**Live, and shared.** Backed by Supabase with row-level security: anyone may
+read unexpired notes and pin one of up to 90 characters, and nobody may edit or
+delete through the public key — verified by trying. Schema and policies are in
+[docs/napkin-wall-backend.md](docs/napkin-wall-backend.md), along with the
+moderation notes worth reading before this is linked anywhere busy.
 
 ## Presence
 
@@ -149,10 +149,10 @@ in when someone arrives and are reclaimed when they go. You cannot talk to
 them, name them, or learn anything about them. You just register that the far
 table is taken.
 
-Like the wall, it ships browser-local: `BroadcastChannel` presence is real
-presence, just scoped to your own windows, and the interface says so. See
-[docs/napkin-wall-backend.md](docs/napkin-wall-backend.md) to make it show
-strangers.
+**Live.** Heartbeats every 10s to Supabase; a visitor is gone after 32s of
+silence. Nothing identifying is stored — the id is random, lives in
+`sessionStorage` and dies with the tab. `BroadcastChannel` remains the
+fallback when no endpoint is configured.
 
 ## Not built yet
 
