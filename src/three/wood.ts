@@ -35,7 +35,24 @@ export type WoodMaps = {
   aoMap: THREE.Texture
 }
 
-export function useWoodMaps(): WoodMaps {
+/**
+ * The maps, at a chosen grain scale.
+ *
+ * `grain` multiplies the repeat, so a family can show the same timber at a
+ * different size. This is the part that actually separated the surfaces. The
+ * siding, the floor and the furniture were distinguished only by a colour
+ * tint, and a tint does not separate anything — what the eye matches on is the
+ * grain, and the identical knots at the identical size were turning up on the
+ * wall behind you and the table in front of you. In the frame from your table
+ * at midday the tabletop and the floorboards were genuinely hard to tell
+ * apart.
+ *
+ * Anything other than the default clones the textures, because repeat lives on
+ * the texture rather than the material and three needs distinct objects to
+ * carry distinct transforms. A clone shares the decoded image; it costs one
+ * more GPU upload of the same pixels, not another download.
+ */
+export function useWoodMaps(grain = 1): WoodMaps {
   const [map, normalMap, roughnessMap, aoMap] = useTexture([
     `${import.meta.env.BASE_URL}textures/planks/diff_1k.jpg`,
     `${import.meta.env.BASE_URL}textures/planks/nor_1k.jpg`,
@@ -44,19 +61,50 @@ export function useWoodMaps(): WoodMaps {
   ])
 
   return useMemo(() => {
-    map.colorSpace = THREE.SRGBColorSpace
+    const set = grain === 1
+      ? { map, normalMap, roughnessMap, aoMap }
+      : {
+          map: map.clone(),
+          normalMap: normalMap.clone(),
+          roughnessMap: roughnessMap.clone(),
+          aoMap: aoMap.clone(),
+        }
+
+    set.map.colorSpace = THREE.SRGBColorSpace
     // The other three are data, not colour. Tagging them sRGB washes out the
     // normals and lifts the roughness, and the wood goes plastic.
-    for (const t of [normalMap, roughnessMap, aoMap]) {
+    for (const t of [set.normalMap, set.roughnessMap, set.aoMap]) {
       t.colorSpace = THREE.NoColorSpace
     }
-    for (const t of [map, normalMap, roughnessMap, aoMap]) {
+    for (const t of [set.map, set.normalMap, set.roughnessMap, set.aoMap]) {
       t.wrapS = t.wrapT = THREE.RepeatWrapping
       t.anisotropy = 8
+      t.repeat.set(grain, grain)
+      t.needsUpdate = true
     }
-    return { map, normalMap, roughnessMap, aoMap }
-  }, [map, normalMap, roughnessMap, aoMap])
+    return set
+  }, [map, normalMap, roughnessMap, aoMap, grain])
 }
+
+/**
+ * How big the grain runs on each family.
+ *
+ * Barn siding keeps the metre-based mapping the walls were built around.
+ * Floorboards are walked on and looked at from a metre and a half, so they
+ * carry more detail per metre. Furniture timber is planed and finer again, and
+ * is the family that most needed to stop matching the floor.
+ *
+ * The floor is not pushed further than this on purpose. Floorboards run the
+ * whole ten metres of the barn, so the tighter the grain the more times the
+ * texture repeats along one board — and past about 1.3 the repeat stops
+ * reading as grain and starts reading as a grid ruled across the floor, which
+ * is worse than the sameness it was fixing.
+ */
+export const GRAIN = {
+  siding: 1,
+  floor: 1.25,
+  furniture: 2.5,
+} as const
 
 /**
  * A material off those maps. `tint` shifts the species without needing a

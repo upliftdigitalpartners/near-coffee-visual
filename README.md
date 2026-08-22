@@ -91,8 +91,12 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | `src/three/Fixtures.tsx` | Counter, tables, bulbs, stove, your cup |
 | `src/three/CameraRig.tsx` | Damped look, scroll dolly, breathing |
 | `src/three/lighting.ts` | Daylight palette → a physical sun |
-| `src/three/wood.ts` | Procedural weathered barn board |
+| `src/three/wood.ts` | The barn's timber, at three grain scales |
+| `src/three/surfaces.ts` | Surfaces that are not timber — stone, glazed china |
+| `src/three/Shafts.tsx` | Ray-marched sunlight through the gaps in the siding |
+| `src/three/Grade.tsx` | The look applied after the tone mapper |
 | `src/scene/daylight.ts` | The 24-hour light model |
+| `src/scene/debug.ts` | Pinning the clock and the camera, for comparable frames |
 
 ### The siding is individual boards
 
@@ -102,6 +106,27 @@ the sun genuinely gets through and lays stripes across the floor, and those
 stripes swing round on their own as the day moves. Nothing about texturing a
 flat wall reproduces that, and without it there would be little reason to be in
 3D at all.
+
+### The light gets to be an object
+
+The gaps between the boards throw stripes on the floor. What was missing was
+the part in between — the blades of lit air standing between the wall and the
+floor, which at low sun in a dusty barn is most of what you actually see.
+
+It ray-marches. Every pixel walks its view ray from the camera to whatever the
+depth buffer recorded, asks at each step whether that point in mid-air can see
+the sun, and integrates what scatters back. The design handoff is emphatic that
+the cheap way does not work — a solid additive volume leaves a hard seam
+wherever it crosses furniture — and marching sidesteps it entirely: the march
+*ends* at the depth buffer, so a shaft crossing the counter is occluded by the
+counter for free. There is no volume, so there is no seam.
+
+It renders its own depth-from-sun rather than reading the shadow map, which was
+not the plan. `src/three/Shafts.tsx` records why at length; the short version is
+that under three r185 the packed-RGBA shadow target every tutorial reads is a
+dummy that is never written, and the real one is a comparison-mode depth
+texture that could not be made to sample correctly from inside a
+post-processing effect on the driver available to check against.
 
 ### The photograph
 
@@ -136,8 +161,46 @@ Each of these was a visible defect first:
   view, the barn vanishes, and you are looking at an unframed photograph.
 - **Granite, then timber, must stay darker than the sky behind it.** Left
   bright, the range dissolves into it.
+- **The valley floor cannot *meet* the photograph, only dissolve into it.** The
+  ground plane's far rim is cut off where the backdrop cylinder occludes it,
+  62m out, and at eye height that rim sits 1.4° below true horizon — while the
+  photograph's horizon is at eye level by construction. A strip of photographed
+  foreground is therefore always left standing above the modelled snow with a
+  hard edge between them, and oversizing the disc does not help, because the
+  disc is not what ends. It now fades out over its last thirty metres and lets
+  the photograph's own foreground carry the distance.
+- **There was no tone mapping at all.** The `Canvas` asks for ACES, and
+  `@react-three/postprocessing` sets `gl.toneMapping = NoToneMapping` the
+  moment a composer mounts — so with post enabled, which is always, nothing
+  mapped anything and every value over 1.0 clipped flat to white. Sixteen per
+  cent of the cup in the frame from your table was pure 255 with a bloom halo
+  round it, which is why a mug read as a light source. Tone mapping is now an
+  effect *in* the chain, AgX per the handoff, followed by a small contrast and
+  saturation look — because AgX is deliberately flat and is only half a
+  pipeline.
+- **A tint does not separate two surfaces; grain scale does.** The siding, the
+  floor and the furniture all came off one plank set at one scale, so identical
+  knots at identical size turned up on the wall behind you and the table in
+  front of you, and from a seated camera the tabletop and the floorboards
+  stopped being separate objects.
 
-### A note on verification
+#### Reproducing a frame
+
+The scene is driven by your clock, live weather, a scroll position and a
+pointer, which is right for a visitor and useless for checking a render — no
+two frames are of the same thing, so nothing can be compared before and after a
+change. Three query parameters pin it, and are inert unless present:
+
+```
+?hour=19.6     force the time of day
+?stop=3        stand exactly at camera station 3, no easing, no sway
+?napkins=11    fill the wall with stand-in notes
+```
+
+`?hour=19.6` is the one to use. Dusk is where every rendering bug in this scene
+has shown up first, and several of them are invisible at midday.
+
+## A note on verification
 
 `HiddenDocumentDriver` in `Scene.tsx` is development-only. Headless preview
 panes keep `document.visibilityState` at `'hidden'`, and browsers do not fire
@@ -170,4 +233,11 @@ fallback when no endpoint is configured.
 
 ## Not built yet
 
-- Today's bake
+- **Real modelled furniture.** The cup, the stove, the espresso machine and the
+  stools are still boxes and cylinders, and at the counter stop it shows. The
+  intention is CC0 glTF assets rather than modelling them by hand. Blocked on
+  reach, not on effort: Poly Haven, its CDN, Sketchfab and ambientCG are all
+  refused at this network's egress proxy. See CREDITS.md.
+- **A second and third photographic PBR set**, for the same reason. The counter
+  is separated from the floor by generating a stone material in code instead;
+  the rest is separated by grain scale.

@@ -348,7 +348,7 @@ export function Shafts({ light }: { light: SceneLight }) {
      * is longer and mostly because that is when it is worth looking at.
      */
     const low = Math.pow(1 - Math.min(light.sunIntensity / 3.9, 1), 1.4)
-    u.get('uIntensity')!.value = 0.15 * (0.5 + low * 0.7) * (1 - 0.85 * light.cloudCover)
+    u.get('uIntensity')!.value = 0.09 * (0.5 + low * 0.7) * (1 - 0.85 * light.cloudCover)
   })
 
   return <primitive object={effect} />

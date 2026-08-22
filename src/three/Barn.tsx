@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { chamferedBox, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
+import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 
 /**
  * The barn.
@@ -323,13 +323,16 @@ function useBarnGeometry() {
 
 export function Barn() {
   const { walls, roof, floor, frame } = useBarnGeometry()
-  const maps = useWoodMaps()
+  const maps = useWoodMaps(GRAIN.siding)
+  const floorMaps = useWoodMaps(GRAIN.floor)
 
   /*
-   * Three materials off one texture set. Siding is silvered by a century of
-   * weather; the frame and the floor kept more of their colour because they
-   * never saw the sky. The tint does that work so a second 2MB download does
-   * not have to.
+   * The same timber, at two grain scales and three finishes. Siding is
+   * silvered by a century of weather; the frame kept more of its colour
+   * because it never saw the sky; the floor is walked on, so it is darker,
+   * smoother and shows a finer figure from the metre and a half you look at it
+   * from. Running the floor on its own map set is what stopped it and the
+   * tables reading as one continuous surface.
    */
   const siding = useWoodMaterial(maps, {
     tint: '#ffffff',
@@ -338,7 +341,11 @@ export function Barn() {
     side: THREE.DoubleSide,
   })
   const timber = useWoodMaterial(maps, { tint: '#c4a882', roughness: 0.95, normalScale: 1.1 })
-  const floorMat = useWoodMaterial(maps, { tint: '#b08c5e', roughness: 0.8, normalScale: 0.9 })
+  const floorMat = useWoodMaterial(floorMaps, {
+    tint: '#7d6242',
+    roughness: 0.62,
+    normalScale: 0.7,
+  })
 
   return (
     <group>

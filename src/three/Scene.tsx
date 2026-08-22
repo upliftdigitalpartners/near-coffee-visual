@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { EffectComposer, Bloom, Vignette, N8AO, SMAA } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, N8AO, SMAA, ToneMapping } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import type { Daylight } from '../scene/daylight'
@@ -15,6 +16,7 @@ import { Chalkboard } from './Chalkboard'
 import type { Bake } from '../wall/bake'
 import { Presence } from './Presence'
 import { Shafts } from './Shafts'
+import { Grade } from './Grade'
 import type { Peer } from '../presence/presence'
 import type { Napkin } from '../wall/napkins'
 
@@ -197,8 +199,8 @@ export function Scene({
       dpr={[1, 2]}
       gl={{
         antialias: false,
-        toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.05,
+        toneMapping: THREE.AgXToneMapping,
+        toneMappingExposure: 0.7,
         // Lets a hidden-document frame survive long enough to be captured.
         preserveDrawingBuffer: import.meta.env.DEV,
       }}
@@ -279,6 +281,22 @@ export function Scene({
            */}
           <Shafts light={light} />
           <Bloom intensity={0.5} luminanceThreshold={0.78} luminanceSmoothing={0.3} mipmapBlur />
+          {/*
+           * Tone mapping, and it was missing entirely.
+           *
+           * The Canvas asks for ACES, but @react-three/postprocessing forces
+           * gl.toneMapping to NoToneMapping the moment a composer mounts — so
+           * with post enabled, which is always, nothing was mapping anything.
+           * Every value over 1.0 clipped flat to white: sixteen per cent of the
+           * cup in the frame from your table was pure 255, with a bloom halo
+           * round it, which is why a mug read as a light source.
+           *
+           * AgX rather than ACES, per the handoff, and for the reason it
+           * matters here: it has a far longer highlight shoulder and rolls the
+           * colour out of a highlight as it goes, instead of clamping it.
+           */}
+          <ToneMapping mode={ToneMappingMode.AGX} />
+          <Grade />
           <Vignette darkness={0.5} offset={0.3} />
           <SMAA />
         </EffectComposer>

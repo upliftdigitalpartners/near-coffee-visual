@@ -2,7 +2,8 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
-import { useWoodMaps, useWoodMaterial } from './wood'
+import { GRAIN, useWoodMaps, useWoodMaterial } from './wood'
+import { useSoapstone, useStoneware } from './surfaces'
 import type { SceneLight } from './lighting'
 
 /**
@@ -13,9 +14,17 @@ import type { SceneLight } from './lighting'
  * has going for it, which is volume.
  */
 
-/** Furniture timber, off the same PBR set as the building. */
+/**
+ * Furniture timber: the building's PBR set, run at its own grain scale.
+ *
+ * The scale is the point. Sharing the barn's mapping put identical knots at
+ * identical size on the tabletop and the floorboards under it, and from a
+ * seated camera the two stopped being separate objects — the cup and the
+ * notebook read as sitting on the floor. Planed furniture timber shows a finer
+ * figure than a floor anyway, so the fix and the truth agree.
+ */
 function useFurnitureWood(color: string, roughness = 0.85) {
-  const maps = useWoodMaps()
+  const maps = useWoodMaps(GRAIN.furniture)
   return useWoodMaterial(maps, { tint: color, roughness, normalScale: 0.8 })
 }
 
@@ -209,17 +218,28 @@ export function Fixtures({
   radioLabel: string
   onToggleRadio?: () => void
 }) {
-  const counterTop = useFurnitureWood('#6b543a', 0.7)
+  const stone = useSoapstone()
+  const china = useStoneware()
   const carcass = useFurnitureWood('#4a3a28')
-  const tableTop = useFurnitureWood('#7a5f3f', 0.65)
+  // Clearly paler than the floor. Planed fir that has been waxed and wiped
+  // down twice a day is not the same colour as a hundred-year-old barn floor,
+  // and at midday, with the light flat, tone is the only thing separating
+  // them — grain scale alone does it at dusk and not at noon.
+  const tableTop = useFurnitureWood('#bda06f', 0.55)
+  /* The back shelf and the pastry board stay timber: a stone top dropped onto
+   * a carpenter's carcass is what a real conversion looks like. */
+  const shelfTop = useFurnitureWood('#6b543a', 0.7)
 
   return (
     <group>
       {/* Counter along the north wall. */}
       <group position={[4.1, 0, 1]}>
+        {/* Soapstone slab. See surfaces.ts — the one surface in the room that
+            is not the barn's timber, and the reason the counter stop stopped
+            reading as a piece of floor stood on its side. */}
         <mesh position={[0, 1.06, 0]} castShadow receiveShadow>
           <boxGeometry args={[1.0, 0.08, 4.4]} />
-          <primitive object={counterTop} attach="material" />
+          <primitive object={stone} attach="material" />
         </mesh>
         <mesh position={[0, 0.52, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.86, 1.0, 4.2]} />
@@ -229,7 +249,7 @@ export function Fixtures({
         {/* Back shelf with the day's beans and a row of cups. */}
         <mesh position={[0.75, 1.85, 0]} castShadow>
           <boxGeometry args={[0.34, 0.05, 3.4]} />
-          <primitive object={counterTop} attach="material" />
+          <primitive object={shelfTop} attach="material" />
         </mesh>
         {[-1.2, -0.75, -0.3].map((z) => (
           <mesh key={z} position={[0.75, 2.0, z]} castShadow>
@@ -240,7 +260,7 @@ export function Fixtures({
         {[0.4, 0.72, 1.04, 1.36].map((z) => (
           <mesh key={z} position={[0.75, 1.93, z]} castShadow>
             <cylinderGeometry args={[0.05, 0.042, 0.08, 14]} />
-            <meshStandardMaterial color="#cfc3ad" roughness={0.55} />
+            <primitive object={china} attach="material" />
           </mesh>
         ))}
 
@@ -276,11 +296,11 @@ export function Fixtures({
         <Interactive label="yours, still hot">
           <mesh position={[0.14, 0.776, 0.06]} castShadow receiveShadow>
             <cylinderGeometry args={[0.105, 0.1, 0.012, 32]} />
-            <meshStandardMaterial color="#d8ccb6" roughness={0.42} />
+            <primitive object={china} attach="material" />
           </mesh>
           <mesh position={[0.14, 0.83, 0.06]} castShadow>
             <cylinderGeometry args={[0.062, 0.05, 0.095, 32]} />
-            <meshStandardMaterial color="#e2d7c2" roughness={0.38} />
+            <primitive object={china} attach="material" />
           </mesh>
           <mesh position={[0.14, 0.862, 0.06]}>
             <cylinderGeometry args={[0.055, 0.055, 0.004, 32]} />
@@ -289,7 +309,7 @@ export function Fixtures({
           {/* Handle. Without it this is a paper cup. */}
           <mesh position={[0.205, 0.832, 0.06]} rotation={[Math.PI / 2, 0, 0]} castShadow>
             <torusGeometry args={[0.035, 0.008, 10, 24, Math.PI * 1.25]} />
-            <meshStandardMaterial color="#e2d7c2" roughness={0.38} />
+            <primitive object={china} attach="material" />
           </mesh>
         </Interactive>
         <Steam position={[0.14, 0.878, 0.06]} />
@@ -366,7 +386,7 @@ export function Fixtures({
       <group position={[4.0, 1.14, 2.3]}>
         <mesh position={[0, 0.02, 0]} castShadow>
           <cylinderGeometry args={[0.2, 0.2, 0.03, 26]} />
-          <primitive object={counterTop} attach="material" />
+          <primitive object={shelfTop} attach="material" />
         </mesh>
         {[[-0.07, 0.04], [0.06, -0.05], [0.02, 0.08]].map(([x, z], i) => (
           <mesh key={i} position={[x, 0.07, z]} rotation={[0, i * 1.1, 0]} castShadow>
