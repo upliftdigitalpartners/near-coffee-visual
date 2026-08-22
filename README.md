@@ -1,87 +1,105 @@
 # Near Coffee
 
-A small stone coffee house on a moraine below the Tetons, open in a browser tab.
+A converted homestead barn below the Tetons, open in a browser tab.
 
 Not a website *about* a coffee shop — a coffee shop that happens to be on the
-internet. The room is modelled on the [Tip Top House](https://en.wikipedia.org/wiki/Tip_Top_House)
-on the summit of Mount Washington: rough-cut granite, mortar set deep, one and
-a half storeys, plain rectangular openings cut through a very thick wall.
+internet. You are sitting at a table near the back. The sliding door is open on
+the Teton range, the sun is going down behind it, and the light in the room
+matches the clock on your own wall.
 
 ```bash
 npm install && npm run dev
 ```
 
+## Where it is
+
+The building is a **Mormon Row** barn — the homesteads at Antelope Flats inside
+Grand Teton National Park, of which the Moulton barns are the best known. It is
+a real place, and it is the reason the setting and the structure agree with each
+other: weathered vertical board-and-batten siding, a timber frame, a gable roof,
+and the entire range standing behind it with no foothills in the way.
+
 ## What it does today
 
-**The window knows what time it is.** The view outside is driven by the
-visitor's own local clock. Open it at six in the morning and the peaks are
-burning pink with the stars still out; open it at midnight and the oil lamp on
-the counter is the only light in the world.
+**The window knows what time it is.** The light is driven by the visitor's own
+local clock, through a full sunrise-to-night model. The clock at the bottom of
+the screen opens a scrubber so you can walk the whole day without waiting.
 
-The clock at the bottom of the screen opens a scrubber, so you can walk the
-whole day without waiting for it.
+**You can walk to the door.** Scrolling dollies the camera from the table up
+toward the opening. It is a camera move, not a page scroll — there is no page.
+
+**Things respond.** Pointing at the cup, the radio or the strung bulbs names
+them; the bulbs can be switched on and off.
 
 ## How it is built
 
-Layered 2.5D, not 3D. Each layer is an SVG drawn in a 1000×700 design space,
-stacked at a declared depth and offset by pointer position or device tilt.
+Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 
-| Depth | Layer |
+| File | What it owns |
 | --- | --- |
-| 0.02 | `View` — sky, stars, the range, the flats |
-| 0.30 | `Glass` |
-| 0.42 | `RoomShell` — granite wall, window reveal, ceiling, floor |
-| 0.50 | `LightShaft` |
-| 0.56 | `DustMotes` |
-| 0.60 | `RoomFurniture` — counter, shelf, oil lamp |
-| 1.00 | `TableForeground` — your table, your cup |
+| `src/three/Barn.tsx` | The structure — siding, roof, floor, frame |
+| `src/three/Backdrop.tsx` | The photographed range, and the ground under it |
+| `src/three/Fixtures.tsx` | Counter, tables, bulbs, stove, your cup |
+| `src/three/CameraRig.tsx` | Damped look, scroll dolly, breathing |
+| `src/three/lighting.ts` | Daylight palette → a physical sun |
+| `src/three/wood.ts` | Procedural weathered barn board |
+| `src/scene/daylight.ts` | The 24-hour light model |
 
-Depth 0 is the Grand Teton at infinity; depth 1 is the edge of the table you
-are sitting at. The pivot sits at 0.35 — roughly the plane of the glass — so
-everything nearer than the window slides one way and the world beyond it
-slides the other. That is what makes the stone reveal scrape across the peaks
-when you shift in your seat, and it is the single effect the whole scene rests
-on.
+### The siding is individual boards
 
-### Swapping in real artwork
+This is the one decision the whole scene rests on. The walls are not a surface
+with a wood texture; they are separate boards with real gaps between them. So
+the sun genuinely gets through and lays stripes across the floor, and those
+stripes swing round on their own as the day moves. Nothing about texturing a
+flat wall reproduces that, and without it there would be little reason to be in
+3D at all.
 
-Every layer is a self-contained component that takes `{ light, viewBox }` and
-returns an SVG. Nothing else knows or cares what is inside it. To replace a
-procedurally drawn layer with a painted one, swap the component body for an
-`<image>` — the depth, the parallax, and the daylight plumbing keep working
-untouched. That is the whole reason the art is structured this way.
+### The photograph
 
-### The daylight model
+"Teton Range Panorama Spring", **National Park Service — public domain**, via
+Wikimedia Commons, in `public/textures/`. NPS photographs are works of the US
+government and carry no copyright, which is why it is this image rather than a
+better-composed one from a stock site: this one is unambiguously safe to put on
+a domain you may one day trade under.
 
-`src/scene/daylight.ts` is keyframes on a 24-hour clock, interpolated with
-smoothstep. Two facts about the site decide everything in it:
+The left quarter of the frame has a ploughed road and a parked car. Rather than
+re-cut the file, the UVs start past them — the download stays pristine and the
+crop is one constant.
 
-- The window faces **west**. The sun therefore rises *behind* the building and
-  sets *behind the range*.
-- So the peaks catch alpenglow at dawn and collapse to silhouette at dusk, and
-  low evening sun is the only time a real shaft of light crosses the floor.
+### Things that are solved, not guessed
 
-Some things that were learned the hard way and are easy to undo by accident:
+Each of these was a visible defect first:
 
-- `afterglow` must sit near zero through the middle of the day. Left running,
-  it flattens the entire sky to cream.
-- `peakLight` must stay **darker** than `skyHorizon` in daylight. Granite is
-  not bright; when it is, the range dissolves into the sky.
-- The haze band wants to be restrained. Turned up, the foot of the range goes
-  lighter than the sky and the mountains read as fog.
+- **The photograph's horizon must land at eye level.** The valley floor is a
+  flat plane, so its horizon is at eye height exactly; if the horizon inside the
+  photograph is anywhere else, the ground cuts across the picture as a hard
+  band. `CENTRE_Y` is derived from that, not dialled in.
+- **The ground disc must be much larger than the backdrop cylinder.** The rim of
+  a finite plane always sits *above* the true horizon, so a same-size disc shows
+  its own edge as a grey line across the doorway.
+- **The backdrop cylinder must be far taller than the photograph.** Sized to the
+  photograph, its top edge is about 18° up — inside the field of view — and
+  reads as the top of a stage flat. Instead it runs to 70m and the texture
+  covers only the lower band; everything above samples past `v = 1` and
+  clamp-to-edge smears the photograph's top row, which is open sky.
+- **The door has to stay small.** At five metres wide it stopped being
+  something you look *through*: stand near it and it exceeds the whole field of
+  view, the barn vanishes, and you are looking at an unframed photograph.
+- **Granite, then timber, must stay darker than the sky behind it.** Left
+  bright, the range dissolves into it.
 
-### Framing
+### A note on verification
 
-The design band is 1000×700 rendered with `slice`, so on a wide screen roughly
-`y 70..630` survives the crop. On portrait the viewBox grows a lot (see
-`src/scene/viewport.ts`) — otherwise a phone scales up ~1.16× and you end up
-looking at a third of the width with the room gone. That is why every
-background shape extends well past the nominal band.
+`HiddenDocumentDriver` in `Scene.tsx` is development-only. Headless preview
+panes keep `document.visibilityState` at `'hidden'`, and browsers do not fire
+`requestAnimationFrame` in a hidden document — so the scene builds correctly,
+the GL context is healthy, and nothing ever draws. That failure looks exactly
+like a broken renderer and is not one. It never runs in a production build.
 
 ## Not built yet
 
-- Ambient sound, and a radio synced so everyone on the site hears the same
-  track at the same timestamp
+- Ambient sound, and a radio synced so everyone hears the same track at the
+  same timestamp
 - Anonymous silhouettes of whoever else is here right now
 - The napkin wall — one line each, fading after seven days
 - Today's bake

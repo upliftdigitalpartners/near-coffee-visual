@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/scene/interior.tsx","./src/scene/view.tsx","./src/scene/daylight.ts","./src/scene/parallax.tsx","./src/scene/viewport.ts","./vite.config.ts"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/scene/daylight.ts","./src/three/backdrop.tsx","./src/three/barn.tsx","./src/three/camerarig.tsx","./src/three/fixtures.tsx","./src/three/scene.tsx","./src/three/lighting.ts","./src/three/wood.ts","./vite.config.ts"],"version":"5.9.3"}

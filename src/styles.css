@@ -28,11 +28,38 @@ body {
   transition: background 1.6s linear;
 }
 
-/* Every parallax layer is absolutely positioned inside here. */
-.stage {
+.shop canvas {
+  display: block;
+  touch-action: none;
+}
+
+/* Label that appears when you point at something in the barn. */
+.tag {
+  font-family: ui-serif, 'Iowan Old Style', Georgia, serif;
+  font-size: 13px;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: #ffeed2;
+  white-space: nowrap;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
+}
+
+.hint {
   position: absolute;
-  inset: 0;
-  overflow: hidden;
+  bottom: clamp(58px, 9vh, 84px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: lowercase;
+  opacity: 0.42;
+  pointer-events: none;
+  transition: opacity 1s ease;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+
+.hint.gone {
+  opacity: 0;
 }
 
 /*
