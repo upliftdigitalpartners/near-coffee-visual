@@ -91,6 +91,8 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | `src/three/Fixtures.tsx` | Counter, tables, bulbs, stove, your cup |
 | `src/three/Bakery.tsx` | The room through the back wall, and its oven |
 | `src/three/Porch.tsx` | Deck, posts, shed roof, bench and sign |
+| `src/three/EspressoMachine.tsx` | The lever machine, turned on a lathe |
+| `src/three/Stove.tsx` | The cast-iron parlour stove |
 | `src/scene/zones.ts` | Where you are allowed to stand |
 | `src/scene/seats.ts` | The four seats, and what each one looks at |
 | `src/order/order.ts` | The menu, and the timed ordering sequence |
@@ -240,11 +242,12 @@ fallback when no endpoint is configured.
 
 ## Not built yet
 
-- **Real modelled furniture.** The cup, the stove, the espresso machine and the
-  stools are still boxes and cylinders, and at the counter stop it shows. The
-  intention is CC0 glTF assets rather than modelling them by hand. Blocked on
-  reach, not on effort: Poly Haven, its CDN, Sketchfab and ambientCG are all
-  refused at this network's egress proxy. See CREDITS.md.
+- **Downloaded CC0 assets.** The espresso machine and the stove are now
+  modelled rather than primitive, but they are modelled *here*, in code, from
+  lathed profiles — not scanned or sculpted assets. The cup, the stools, the
+  tables and the grinder are still primitives. Blocked on reach, not on effort:
+  Poly Haven, its CDN, Sketchfab and ambientCG are all refused at this
+  network's egress proxy. See CREDITS.md.
 - **A second and third photographic PBR set**, for the same reason. The counter
   is separated from the floor by generating a stone material in code instead;
   the rest is separated by grain scale.

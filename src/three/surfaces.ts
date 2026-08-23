@@ -283,3 +283,141 @@ export function useStoneware(tint = '#cfc6b4') {
     })
   }, [tint])
 }
+
+/**
+ * Metal that has been in a room.
+ *
+ * The espresso machine and the stove were a box and a cylinder with a flat
+ * colour and a metalness value, and flat metalness is the worst-behaved
+ * material in a renderer: a perfectly uniform metal has a perfectly uniform
+ * reflection, so a two-metre stove catches one even highlight across its whole
+ * face and reads as painted plastic. What sells metal is that its roughness
+ * varies — polished where hands touch it, dull where they do not, pitted where
+ * it has been hot for thirty years.
+ *
+ * So both metals get a generated roughness map and a normal derived from it.
+ * Cheap: one 512 canvas each, no download, and it is the difference between an
+ * object and a placeholder.
+ */
+function metalRoughness(seed: number, lo: number, hi: number, blotches: number) {
+  const [c, ctx] = canvas(512)
+  const rand = seeded(seed)
+  const mid = (lo + hi) / 2
+  ctx.fillStyle = `rgb(${Math.round(mid * 255)},${Math.round(mid * 255)},${Math.round(mid * 255)})`
+  ctx.fillRect(0, 0, 512, 512)
+
+  for (let i = 0; i < blotches; i++) {
+    const x = rand() * 512
+    const y = rand() * 512
+    const r = 6 + rand() * 70
+    const v = Math.round((lo + rand() * (hi - lo)) * 255)
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+    g.addColorStop(0, `rgba(${v},${v},${v},0.5)`)
+    g.addColorStop(1, `rgba(${v},${v},${v},0)`)
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Fine pitting, which is most of what says "cast" rather than "moulded".
+  const img = ctx.getImageData(0, 0, 512, 512)
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = (rand() - 0.5) * 26
+    img.data[i] += n
+    img.data[i + 1] += n
+    img.data[i + 2] += n
+  }
+  ctx.putImageData(img, 0, 0)
+  return c
+}
+
+function metal(opts: {
+  seed: number
+  color: string
+  lo: number
+  hi: number
+  metalness: number
+  blotches: number
+  repeat: number
+  normalScale: number
+}): THREE.MeshStandardMaterial {
+  const rc = metalRoughness(opts.seed, opts.lo, opts.hi, opts.blotches)
+  const roughnessMap = new THREE.CanvasTexture(rc)
+  roughnessMap.colorSpace = THREE.NoColorSpace
+  const normalMap = normalFrom(heights(rc, DERIVE), DERIVE, opts.normalScale)
+  for (const t of [roughnessMap, normalMap]) {
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.repeat.set(opts.repeat, opts.repeat)
+    t.anisotropy = 8
+  }
+  return new THREE.MeshStandardMaterial({
+    color: opts.color,
+    roughnessMap,
+    normalMap,
+    roughness: 1,
+    metalness: opts.metalness,
+    normalScale: new THREE.Vector2(0.5, 0.5),
+    envMapIntensity: 1.1,
+  })
+}
+
+/** Blacked stove iron: matte, pitted, barely reflective. */
+export function useCastIron() {
+  return useMemo(
+    () =>
+      metal({
+        seed: 5150,
+        color: '#3a3634',
+        lo: 0.55,
+        hi: 0.92,
+        metalness: 0.62,
+        blotches: 240,
+        repeat: 2.2,
+        normalScale: 1.4,
+      }),
+    [],
+  )
+}
+
+/** Chromed boiler and group heads. Bright, but not a mirror — nothing is. */
+export function useChrome() {
+  return useMemo(
+    () =>
+      metal({
+        seed: 2718,
+        /*
+         * Faintly warm, not neutral. The environment map is a Norwegian winter
+         * HDRI, so neutral chrome reflects it and the boiler comes back blue —
+         * correct physics, wrong object. Real machine chrome sits in a warm
+         * room and picks the room up.
+         */
+        color: '#cfcac2',
+        lo: 0.08,
+        hi: 0.34,
+        metalness: 1,
+        blotches: 130,
+        repeat: 1.6,
+        normalScale: 0.5,
+      }),
+    [],
+  )
+}
+
+/** Brass, for the fittings and the foot rail. */
+export function useBrass() {
+  return useMemo(
+    () =>
+      metal({
+        seed: 1123,
+        color: '#8f7442',
+        lo: 0.22,
+        hi: 0.55,
+        metalness: 1,
+        blotches: 150,
+        repeat: 2,
+        normalScale: 0.8,
+      }),
+    [],
+  )
+}

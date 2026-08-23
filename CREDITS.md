@@ -44,7 +44,11 @@ there is no file to license and no provenance to check.
 
 | What | Where |
 | --- | --- |
-| Soapstone counter — albedo, and normal and roughness derived from it | `src/three/surfaces.ts` |
+| Soapstone counter, and the oven's firebrick | `src/three/surfaces.ts` |
+| Cast iron, chrome and brass — roughness maps and normals derived from them | `src/three/surfaces.ts` |
+| The lever espresso machine, modelled from lathed profiles | `src/three/EspressoMachine.tsx` |
+| The cast-iron parlour stove | `src/three/Stove.tsx` |
+| The painted porch sign | `src/wall/sign.ts` |
 | Glazed stoneware for the cups and crockery | `src/three/surfaces.ts` |
 | Crusted snow for the valley floor | `src/three/Backdrop.tsx` |
 | The chalkboard, and the day's bake written on it | `src/wall/bake.ts` |
@@ -53,11 +57,16 @@ there is no file to license and no provenance to check.
 
 ## Assets that were wanted and are not here
 
-The furniture is still built from primitives — the espresso machine is a box,
-the stove is a cylinder, the stools are discs on legs. Replacing them with real
-modelled CC0 glTF assets is the obvious next step and is **not done**, because
-every source for them is unreachable from the environment this work was carried
-out in. `polyhaven.com`, `dl.polyhaven.org`, `cdn.polyhaven.com`,
+The espresso machine and the stove are **modelled rather than downloaded**. The
+intention was CC0 glTF for both; every source is unreachable from the
+environment this work was carried out in, so they are built in code from lathed
+profiles instead — see `EspressoMachine.tsx` and `Stove.tsx`. That is a real
+improvement on the box and the cylinder they replaced, and it is not the same
+thing as a scanned or sculpted asset.
+
+The cup, the stools, the tables and the grinder are **still primitives**.
+
+`polyhaven.com`, `dl.polyhaven.org`, `cdn.polyhaven.com`,
 `sketchfab.com` and `ambientcg.com` are all refused at the egress proxy with a
 403 before the request leaves the network. That is an organisation network
 policy, not a fixable bug, and routing around a policy denial is not something

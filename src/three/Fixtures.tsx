@@ -4,6 +4,8 @@ import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { GRAIN, useWoodMaps, useWoodMaterial } from './wood'
 import { useSoapstone, useStoneware } from './surfaces'
+import { EspressoMachine } from './EspressoMachine'
+import { Stove } from './Stove'
 import type { SceneLight } from './lighting'
 
 /**
@@ -382,30 +384,30 @@ export function Fixtures({
        * empty room at arm's length reads as a set rather than a shop.
        */}
 
-      {/* Espresso machine and grinder on the counter. */}
-      <group position={[4.0, 1.1, -0.4]}>
-        <mesh position={[0, 0.17, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.52, 0.34, 0.7]} />
-          <meshStandardMaterial color="#20242a" roughness={0.35} metalness={0.75} />
-        </mesh>
-        <mesh position={[0, 0.36, 0]} castShadow>
-          <boxGeometry args={[0.46, 0.06, 0.62]} />
-          <meshStandardMaterial color="#b9782f" roughness={0.28} metalness={0.9} />
-        </mesh>
-        {[-0.18, 0.18].map((z) => (
-          <mesh key={z} position={[-0.28, 0.1, z]} rotation={[0, 0, Math.PI / 2]} castShadow>
-            <cylinderGeometry args={[0.022, 0.022, 0.16, 12]} />
-            <meshStandardMaterial color="#7d838a" roughness={0.3} metalness={0.85} />
-          </mesh>
-        ))}
+      {/*
+       * The machine, and the grinder beside it. See EspressoMachine.tsx — it
+       * is modelled from lathed profiles rather than downloaded, because every
+       * CC0 source is unreachable from this network.
+       */}
+      <group position={[4.08, 1.1, -0.4]}>
+        <EspressoMachine />
+      </group>
+
+      <group position={[4.05, 1.1, 0.42]}>
         <Grinder grinding={!!grinding}>
-          <mesh position={[0.05, 0.24, -0.52]} castShadow>
+          <mesh position={[0, 0.24, 0]} castShadow>
             <cylinderGeometry args={[0.1, 0.12, 0.48, 18]} />
             <meshStandardMaterial color="#2a2e33" roughness={0.4} metalness={0.6} />
           </mesh>
-          <mesh position={[0.05, 0.52, -0.52]} castShadow>
+          <mesh position={[0, 0.52, 0]} castShadow>
             <coneGeometry args={[0.11, 0.2, 18]} />
-            <meshStandardMaterial color="#3a2a1c" roughness={0.5} metalness={0.2} transparent opacity={0.8} />
+            <meshStandardMaterial
+              color="#3a2a1c"
+              roughness={0.5}
+              metalness={0.2}
+              transparent
+              opacity={0.8}
+            />
           </mesh>
         </Grinder>
       </group>
@@ -547,22 +549,8 @@ export function Fixtures({
       )}
 
       {/* Wood stove in the corner — the reason the place is habitable. */}
-      <group position={[-4.4, 0, 4.2]}>
-        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.34, 0.38, 1.0, 18]} />
-          <meshStandardMaterial color="#1c1a19" roughness={0.62} metalness={0.55} />
-        </mesh>
-        <mesh position={[0, 2.3, 0]} castShadow>
-          <cylinderGeometry args={[0.09, 0.09, 2.6, 14]} />
-          <meshStandardMaterial color="#232120" roughness={0.6} metalness={0.5} />
-        </mesh>
-        <pointLight
-          position={[0.3, 0.45, 0]}
-          color="#ff7b2e"
-          intensity={light.lampIntensity * 4 + 0.6}
-          distance={5}
-          decay={2}
-        />
+      <group position={[-4.4, 0, 4.2]} rotation={[0, -0.34, 0]}>
+        <Stove light={light} />
       </group>
     </group>
   )
