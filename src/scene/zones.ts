@@ -39,18 +39,7 @@ export type Zone = Rect & { floorY: number; name: string }
 export const ZONES: Zone[] = [
   { name: 'room', x0: -5.5, x1: 3.4, z0: -3.5, z1: 5.5, floorY: 0 },
   { name: 'doorway', x0: -1.65, x1: 1.65, z0: -4.5, z1: -3.5, floorY: 0 },
-  /*
-   * The threshold, not the porch.
-   *
-   * You can step outside and turn round to look at the barn, and no further.
-   * The porch the handoff specifies — deck, posts, shed roof, bench, sign — is
-   * not built yet, and without it walking out here puts you on bare snow with
-   * the Teton plate filling the whole frame, unframed, at a distance where the
-   * photograph visibly runs out of resolution. That is the failure the README
-   * warns about, and free movement turns it from a thing you cannot reach into
-   * a thing you walk straight into. The zone opens up when the porch exists.
-   */
-  { name: 'threshold', x0: -2.6, x1: 2.6, z0: -5.5, z1: -4.5, floorY: 0 },
+  { name: 'porch', x0: -3.3, x1: 3.3, z0: -7.05, z1: -4.5, floorY: 0.08 },
   /* The gap in the back wall, and the bakery behind it. */
   { name: 'hatch', x0: 1.6, x1: 3.2, z0: 5.5, z1: 6.3, floorY: 0 },
   { name: 'bakery', x0: 0.5, x1: 4.2, z0: 6.3, z1: 9.5, floorY: 0 },
@@ -69,6 +58,12 @@ export const BLOCKERS: Rect[] = [
   { x0: -4.0, x1: -2.4, z0: -0.4, z1: 1.2 },
   { x0: -4.2, x1: -2.6, z0: 2.6, z1: 4.2 },
   { x0: 2.3, x1: 3.4, z0: 3.4, z1: 5.0 },
+  /* The porch bench, and the four posts holding the roof up. */
+  { x0: -3.2, x1: -1.4, z0: -4.9, z1: -4.3 },
+  { x0: -3.2, x1: -2.9, z0: -7.0, z1: -6.7 },
+  { x0: -2.1, x1: -1.8, z0: -7.0, z1: -6.7 },
+  { x0: 1.8, x1: 2.1, z0: -7.0, z1: -6.7 },
+  { x0: 2.9, x1: 3.2, z0: -7.0, z1: -6.7 },
   /* Bakery: the deck oven, and the work bench down the middle. */
   { x0: 2.6, x1: 4.2, z0: 8.4, z1: 9.5 },
   { x0: 0.6, x1: 2.2, z0: 7.0, z1: 8.6 },

@@ -88,10 +88,32 @@ export const STATIONS: Station[] = [
     label: 'the bakery',
   },
   {
-    /* Just outside the door, facing back in. The porch proper is not built. */
-    at: new THREE.Vector3(-0.3, 1.58, -5.1),
-    look: new THREE.Vector3(0.4, 1.9, 2.0),
-    label: 'the threshold',
+    /*
+     * At the inner edge of the deck, twelve degrees down.
+     *
+     * Standing on a porch, the porch is the hardest thing to see. The deck is
+     * 1.54m below the eye, so it runs from 27 degrees down at its far edge to
+     * straight down at your feet — and a 46 degree frame catches almost none
+     * of that at eye level. Two earlier attempts both came back as pure
+     * photograph with a 15cm sliver of board in one corner, and both times the
+     * instinct to fix it by pitching further down was backwards: pitching down
+     * reveals the deck *nearer*, and near deck is exactly what is already
+     * outside the frame.
+     *
+     * What sets it is the far edge. Standing at the wall rather than out on
+     * the boards puts that edge 3m away at -27 degrees; a 12 degree pitch then
+     * lands the frame's bottom at -35, which is 2.2m out, and about 0.85m of
+     * deck reads across the bottom of the picture. The peaks land just inside
+     * the top at +22.
+     *
+     * The roof cannot be in this shot at any angle — deck edge and roof edge
+     * are 67 degrees apart from under it. It reads from inside the barn
+     * instead, as the band across the head of the doorway, which is where it
+     * does its real work.
+     */
+    at: new THREE.Vector3(0.6, 1.62, -4.15),
+    look: new THREE.Vector3(2.0, -1.36, -18),
+    label: 'the porch',
   },
 ]
 

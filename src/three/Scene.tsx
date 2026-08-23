@@ -17,6 +17,7 @@ import type { Bake } from '../wall/bake'
 import { Presence } from './Presence'
 import { Shafts } from './Shafts'
 import { Bakery } from './Bakery'
+import { Porch } from './Porch'
 import { Grade } from './Grade'
 import type { Peer } from '../presence/presence'
 import type { Napkin } from '../wall/napkins'
@@ -248,6 +249,9 @@ export function Scene({
       </Suspense>
       <Suspense fallback={null}>
         <Bakery light={light} bulbsOn={bulbsOn} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <Porch />
       </Suspense>
       <NapkinWall napkins={napkins} />
       <Chalkboard bake={bake} />

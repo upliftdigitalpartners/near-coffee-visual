@@ -89,6 +89,9 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | `src/three/Barn.tsx` | The structure — siding, roof, floor, frame |
 | `src/three/Backdrop.tsx` | The photographed range, and the ground under it |
 | `src/three/Fixtures.tsx` | Counter, tables, bulbs, stove, your cup |
+| `src/three/Bakery.tsx` | The room through the back wall, and its oven |
+| `src/three/Porch.tsx` | Deck, posts, shed roof, bench and sign |
+| `src/scene/zones.ts` | Where you are allowed to stand |
 | `src/three/CameraRig.tsx` | Damped look, scroll dolly, breathing |
 | `src/three/lighting.ts` | Daylight palette → a physical sun |
 | `src/three/wood.ts` | The barn's timber, at three grain scales |
@@ -238,6 +241,9 @@ fallback when no endpoint is configured.
   intention is CC0 glTF assets rather than modelling them by hand. Blocked on
   reach, not on effort: Poly Haven, its CDN, Sketchfab and ambientCG are all
   refused at this network's egress proxy. See CREDITS.md.
+- **Sitting down, and ordering.** The handoff specifies four seats that drop
+  the eye to 1.16 and a timed ordering sequence with synthesised sound. Neither
+  exists. It is the largest remaining piece.
 - **A second and third photographic PBR set**, for the same reason. The counter
   is separated from the floor by generating a stone material in code instead;
   the rest is separated by grain scale.
