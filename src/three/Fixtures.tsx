@@ -3,9 +3,11 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { GRAIN, useWoodMaps, useWoodMaterial } from './wood'
-import { useSoapstone, useStoneware } from './surfaces'
+import { useSoapstone } from './surfaces'
 import { EspressoMachine } from './EspressoMachine'
 import { Stove } from './Stove'
+import { Cup, Saucer } from './Crockery'
+import { Stool } from './Stool'
 import type { SceneLight } from './lighting'
 
 /**
@@ -247,7 +249,6 @@ export function Fixtures({
   grinding?: boolean
 }) {
   const stone = useSoapstone()
-  const china = useStoneware()
   const carcass = useFurnitureWood('#4a3a28')
   // Clearly paler than the floor. Planed fir that has been waxed and wiped
   // down twice a day is not the same colour as a hundred-year-old barn floor,
@@ -285,11 +286,17 @@ export function Fixtures({
             <meshStandardMaterial color="#2e2116" roughness={0.85} />
           </mesh>
         ))}
-        {[0.4, 0.72, 1.04, 1.36].map((z) => (
-          <mesh key={z} position={[0.75, 1.93, z]} castShadow>
-            <cylinderGeometry args={[0.05, 0.042, 0.08, 14]} />
-            <primitive object={china} attach="material" />
-          </mesh>
+        {/* Cups turned upside down on the shelf, as they are left to drain.
+            Each one turned to its own bearing — a row of handles all pointing
+            the same way is the tell that they were placed by a loop. */}
+        {[0.4, 0.72, 1.04, 1.36].map((z, i) => (
+          <Cup
+            key={z}
+            position={[0.75, 1.875, z]}
+            scale={0.92}
+            coffee={false}
+            rotation={0.9 + i * 1.7}
+          />
         ))}
 
         {/* The radio. Click it. */}
@@ -321,26 +328,17 @@ export function Fixtures({
          * not guessed, or the crockery floats. The coffee surface is set well
          * below the rim so it does not z-fight the cup it is sitting in.
          */}
+        {/*
+         * See Crockery.tsx. This is the nearest object to the seated camera in
+         * the whole building, so it is the one place where the rim having
+         * thickness and the cup standing on a foot ring are worth the points.
+         * The cup sits 6.5mm up, in the saucer's well, not on the table.
+         */}
         <Interactive label="yours, still hot">
-          <mesh position={[0.14, 0.776, 0.06]} castShadow receiveShadow>
-            <cylinderGeometry args={[0.105, 0.1, 0.012, 32]} />
-            <primitive object={china} attach="material" />
-          </mesh>
-          <mesh position={[0.14, 0.83, 0.06]} castShadow>
-            <cylinderGeometry args={[0.062, 0.05, 0.095, 32]} />
-            <primitive object={china} attach="material" />
-          </mesh>
-          <mesh position={[0.14, 0.862, 0.06]}>
-            <cylinderGeometry args={[0.055, 0.055, 0.004, 32]} />
-            <meshStandardMaterial color="#38200f" roughness={0.18} metalness={0.05} />
-          </mesh>
-          {/* Handle. Without it this is a paper cup. */}
-          <mesh position={[0.205, 0.832, 0.06]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <torusGeometry args={[0.035, 0.008, 10, 24, Math.PI * 1.25]} />
-            <primitive object={china} attach="material" />
-          </mesh>
+          <Saucer position={[0.14, 0.77, 0.06]} />
+          <Cup position={[0.14, 0.7765, 0.06]} rotation={0.5} />
         </Interactive>
-        <Steam position={[0.14, 0.878, 0.06]} />
+        <Steam position={[0.14, 0.85, 0.06]} />
 
         {/* Someone's notebook, left open. */}
         <mesh position={[-0.26, 0.779, -0.06]} rotation={[0, 0.42, 0]} castShadow>
@@ -360,14 +358,13 @@ export function Fixtures({
           <primitive object={carcass} attach="material" />
         </mesh>
         {[0, Math.PI * 0.7].map((a, i) => (
-          <mesh
+          <Stool
             key={i}
-            position={[Math.cos(a) * 1.0, 0.44, Math.sin(a) * 1.0]}
-            castShadow
-          >
-            <cylinderGeometry args={[0.17, 0.15, 0.06, 16]} />
-            <primitive object={tableTop} attach="material" />
-          </mesh>
+            position={[Math.cos(a) * 1.0, 0, Math.sin(a) * 1.0]}
+            rotation={2.1 - a}
+            seat={tableTop}
+            leg={carcass}
+          />
         ))}
       </group>
 
@@ -461,18 +458,13 @@ export function Fixtures({
             <primitive object={carcass} attach="material" />
           </mesh>
           {[0.6, 2.4, 4.3].map((a, j) => (
-            <group key={j} position={[Math.cos(a) * 0.95, 0, Math.sin(a) * 0.95]}>
-              <mesh position={[0, 0.44, 0]} castShadow>
-                <cylinderGeometry args={[0.17, 0.15, 0.06, 16]} />
-                <primitive object={tableTop} attach="material" />
-              </mesh>
-              {[0.8, 2.9, 5.0].map((b, k) => (
-                <mesh key={k} position={[Math.cos(b) * 0.11, 0.21, Math.sin(b) * 0.11]} castShadow>
-                  <cylinderGeometry args={[0.018, 0.022, 0.42, 8]} />
-                  <primitive object={carcass} attach="material" />
-                </mesh>
-              ))}
-            </group>
+            <Stool
+              key={j}
+              position={[Math.cos(a) * 0.95, 0, Math.sin(a) * 0.95]}
+              rotation={a * 1.3 + i}
+              seat={tableTop}
+              leg={carcass}
+            />
           ))}
         </group>
       ))}
@@ -525,22 +517,12 @@ export function Fixtures({
         <group position={served.tray}>
           {served.kind === 'drink' ? (
             <>
-              <mesh castShadow receiveShadow>
-                <cylinderGeometry args={[0.088, 0.084, 0.012, 28]} />
-                <primitive object={china} attach="material" />
-              </mesh>
-              <mesh position={[0, 0.05, 0]} castShadow>
-                <cylinderGeometry args={[0.055, 0.045, 0.088, 28]} />
-                <primitive object={china} attach="material" />
-              </mesh>
-              <mesh position={[0, 0.081, 0]}>
-                <cylinderGeometry args={[0.048, 0.048, 0.004, 28]} />
-                <meshStandardMaterial color="#38200f" roughness={0.2} />
-              </mesh>
-              <Steam position={[0, 0.095, 0]} />
+              <Saucer />
+              <Cup position={[0, 0.0065, 0]} rotation={-0.7} />
+              <Steam position={[0, 0.08, 0]} />
             </>
           ) : (
-            <mesh position={[0, 0.03, 0]} rotation={[0, 0.6, 0]} castShadow receiveShadow>
+            <mesh position={[0, 0.036, 0]} rotation={[0, 0.6, 0]} castShadow receiveShadow>
               <capsuleGeometry args={[0.036, 0.055, 4, 12]} />
               <meshStandardMaterial color="#a8712f" roughness={0.72} />
             </mesh>

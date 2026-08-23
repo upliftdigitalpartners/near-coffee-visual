@@ -93,6 +93,8 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | `src/three/Porch.tsx` | Deck, posts, shed roof, bench and sign |
 | `src/three/EspressoMachine.tsx` | The lever machine, turned on a lathe |
 | `src/three/Stove.tsx` | The cast-iron parlour stove |
+| `src/three/Crockery.tsx` | The cup, its handle and its saucer |
+| `src/three/Stool.tsx` | The turned three-legged stool |
 | `src/scene/zones.ts` | Where you are allowed to stand |
 | `src/scene/seats.ts` | The four seats, and what each one looks at |
 | `src/order/order.ts` | The menu, and the timed ordering sequence |
@@ -242,9 +244,9 @@ fallback when no endpoint is configured.
 
 ## Not built yet
 
-- **Downloaded CC0 assets.** The espresso machine and the stove are now
-  modelled rather than primitive, but they are modelled *here*, in code, from
-  lathed profiles — not scanned or sculpted assets. The cup, the stools, the
+- **Downloaded CC0 assets.** The espresso machine, the stove, the crockery and
+  the stools are now modelled rather than primitive, but they are modelled
+  *here*, in code, from lathed profiles — not scanned or sculpted assets. The
   tables and the grinder are still primitives. Blocked on reach, not on effort:
   Poly Haven, its CDN, Sketchfab and ambientCG are all refused at this
   network's egress proxy. See CREDITS.md.

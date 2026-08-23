@@ -34,7 +34,15 @@ export type Seat = {
    * specific, a little dry, and meant to be replaced with his own.
    */
   passage: string
-  /** Where a cup lands if you order from here. */
+  /**
+   * Where a cup lands if you order from here.
+   *
+   * This is the *surface* — the top of the table or the bench — not where the
+   * middle of the saucer goes. The old cup was a cylinder centred on its own
+   * origin, so these numbers were authored half a saucer high, and once the
+   * crockery became a lathe standing on its own base every drink was served
+   * floating two centimetres above the wood.
+   */
   tray: [number, number, number]
 }
 
@@ -69,7 +77,7 @@ export const SEATS: Seat[] = [
      * table, inside the frame, and left of where the seated panel starts —
      * which is four constraints and very little room between them.
      */
-    tray: [0.72, 0.79, 2.85],
+    tray: [0.72, 0.77, 2.85],
   },
   {
     label: 'the window bench',
@@ -79,7 +87,7 @@ export const SEATS: Seat[] = [
       'The bench came out of the stalls when the barn stopped being a barn. ' +
       'You can still see where the boards were cut. In the afternoon the gap ' +
       'above your head puts a stripe of sun along it, and it moves while you sit.',
-    tray: [-4.95, 0.53, 1.7],
+    tray: [-4.95, 0.495, 1.7],
   },
   {
     label: 'the chair by the stove',
@@ -97,7 +105,7 @@ export const SEATS: Seat[] = [
       'Closest chair to the stove, and the first one taken on a cold morning. ' +
       'The wood is split small because the firebox is small. Nobody who sits ' +
       'here gets up quickly.',
-    tray: [-3.25, 0.79, 3.28],
+    tray: [-3.25, 0.77, 3.28],
   },
   {
     label: 'the porch bench',
@@ -107,6 +115,6 @@ export const SEATS: Seat[] = [
       'Outside, under the roof, with the whole range in front of you and no ' +
       'glass in the way. It is colder out here. People sit here anyway, in ' +
       'coats, holding the cup with both hands.',
-    tray: [-2.3, 0.58, -4.62],
+    tray: [-2.3, 0.555, -4.62],
   },
 ]
