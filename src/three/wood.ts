@@ -175,6 +175,132 @@ export function plankUVs(geom: THREE.BufferGeometry, length: number, seed: numbe
 
 
 /**
+ * Box-project a turned object as though it were cut from boards.
+ *
+ * A lathe's own UVs are cylindrical — u runs round the axis, v along the
+ * profile — which is right for the side of a column and catastrophic for
+ * anything flat. On a table top it wraps the grain into concentric rings, and
+ * a metre-and-a-quarter bullseye is the single loudest fake thing that has
+ * been in this scene; the old cylinder happened to avoid it only because its
+ * end caps carry a planar disc mapping.
+ *
+ * So each triangle is projected down whichever axis its own face normal
+ * points along most. Per-triangle rather than per-vertex, because a smooth
+ * lathe's vertex normals swing gradually and a vertex-by-vertex choice flips
+ * partway across a face, which tears the texture along the seam. That needs
+ * an unindexed geometry, which for a few hundred triangles costs nothing.
+ *
+ * The V axis is scaled so one of the source texture's nine planks covers one
+ * board width, because a round top is glued up from boards and the texture's
+ * own seams then land where real ones would. Scaling both axes the same way
+ * instead drags each board across all nine planks and the timber reads as
+ * masonry — the same trap `plankUVs` above exists to avoid.
+ *
+ * `grain` must match the value the maps were built at: repeat lives on the
+ * texture and multiplies whatever is written here.
+ */
+const BOARD_W = 0.14
+
+export function boardUVs(geom: THREE.BufferGeometry, grain: number, seed = 0) {
+  const g = geom.index ? geom.toNonIndexed() : geom
+  const pos = g.attributes.position as THREE.BufferAttribute
+  const uv = new Float32Array(pos.count * 2)
+  const su = 1 / TILE_M
+  const sv = BAND / (BOARD_W * grain)
+  // Start inside a plank rather than straddling a seam.
+  const offset = (Math.floor(((seed * 2654435761) >>> 0) / 4294967296 * 9) / 9 + 0.012) / grain
+
+  const a = new THREE.Vector3()
+  const b = new THREE.Vector3()
+  const c = new THREE.Vector3()
+  const n = new THREE.Vector3()
+  const t = new THREE.Vector3()
+
+  for (let i = 0; i < pos.count; i += 3) {
+    a.fromBufferAttribute(pos, i)
+    b.fromBufferAttribute(pos, i + 1)
+    c.fromBufferAttribute(pos, i + 2)
+    n.crossVectors(b.clone().sub(a), c.clone().sub(a))
+    const nx = Math.abs(n.x)
+    const ny = Math.abs(n.y)
+    const nz = Math.abs(n.z)
+    // Flat faces read boards across the plan; the edge band reads them
+    // running round it, so the seams stay parallel to the ones on top.
+    const axis = ny >= nx && ny >= nz ? 1 : nx >= nz ? 0 : 2
+    for (let k = 0; k < 3; k++) {
+      t.copy(k === 0 ? a : k === 1 ? b : c)
+      const along = axis === 0 ? t.z : t.x
+      const across = axis === 1 ? t.z : t.y
+      uv[(i + k) * 2] = along * su
+      uv[(i + k) * 2 + 1] = offset + across * sv
+    }
+  }
+
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  g.setAttribute('uv1', new THREE.BufferAttribute(uv.slice(), 2))
+  return g
+}
+
+/**
+ * Run the grain along a turned or swept object's axis.
+ *
+ * A lathe's V runs along the profile and its U runs round the axis, so the
+ * source texture — a wall of nine horizontal planks — lays its plank seams
+ * across the object as a stack of horizontal rings. On a table pedestal that
+ * is unmistakable: it reads as a column built from stacked discs, which is
+ * the one thing turned timber is not.
+ *
+ * Wood on a turned leg runs *along* it, so the axis has to be U, the same
+ * direction the texture's own grain runs. What is left over — the way round —
+ * is squeezed into a single plank's band, exactly as `plankUVs` does for
+ * boards, so the object never crosses a seam. The squash across is severe on
+ * anything fat, and it does not matter: across the grain is where timber has
+ * least to show, and you only ever see half a circumference at once.
+ */
+function grainUVs(
+  geom: THREE.BufferGeometry,
+  grain: number,
+  seed: number,
+  alongOf: (i: number) => number,
+  aroundOf: (i: number) => number,
+) {
+  const uv = geom.attributes.uv as THREE.BufferAttribute
+  if (!uv) return geom
+  const band = (Math.floor((((seed * 2654435761) >>> 0) / 4294967296) * 9) / 9 + 0.012) / grain
+  const out = new Float32Array(uv.count * 2)
+  for (let i = 0; i < uv.count; i++) {
+    out[i * 2] = alongOf(i) / TILE_M
+    out[i * 2 + 1] = band + (aroundOf(i) * BAND) / grain
+  }
+  geom.setAttribute('uv', new THREE.BufferAttribute(out, 2))
+  geom.setAttribute('uv1', new THREE.BufferAttribute(out.slice(), 2))
+  return geom
+}
+
+/** A lathed object standing on its Y axis: grain up it, one plank round it. */
+export function turnedUVs(geom: THREE.BufferGeometry, grain: number, seed = 0) {
+  const pos = geom.attributes.position as THREE.BufferAttribute
+  const uv = geom.attributes.uv as THREE.BufferAttribute
+  if (!uv) return geom
+  return grainUVs(geom, grain, seed, (i) => pos.getY(i), (i) => uv.getX(i))
+}
+
+/** A tube swept along a curve: grain follows the curve. */
+export function sweptUVs(geom: THREE.BufferGeometry, grain: number, length: number, seed = 0) {
+  const uv = geom.attributes.uv as THREE.BufferAttribute
+  if (!uv) return geom
+  // TubeGeometry lays U along the curve and V round it — the opposite of a
+  // lathe, and already the way round we want.
+  const u0 = new Float32Array(uv.count)
+  const v0 = new Float32Array(uv.count)
+  for (let i = 0; i < uv.count; i++) {
+    u0[i] = uv.getX(i)
+    v0[i] = uv.getY(i)
+  }
+  return grainUVs(geom, grain, seed, (i) => u0[i] * length, (i) => v0[i])
+}
+
+/**
  * A board with its edges taken off.
  *
  * The loudest remaining "this is CG" signal was that every edge in the room

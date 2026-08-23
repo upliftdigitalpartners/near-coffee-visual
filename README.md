@@ -88,13 +88,15 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | --- | --- |
 | `src/three/Barn.tsx` | The structure — siding, roof, floor, frame |
 | `src/three/Backdrop.tsx` | The photographed range, and the ground under it |
-| `src/three/Fixtures.tsx` | Counter, tables, bulbs, stove, your cup |
+| `src/three/Fixtures.tsx` | Counter, shelves, bulbs, and what is on them |
 | `src/three/Bakery.tsx` | The room through the back wall, and its oven |
 | `src/three/Porch.tsx` | Deck, posts, shed roof, bench and sign |
 | `src/three/EspressoMachine.tsx` | The lever machine, turned on a lathe |
 | `src/three/Stove.tsx` | The cast-iron parlour stove |
 | `src/three/Crockery.tsx` | The cup, its handle and its saucer |
 | `src/three/Stool.tsx` | The turned three-legged stool |
+| `src/three/Table.tsx` | The tripod pedestal tables |
+| `src/three/Grinder.tsx` | The doser grinder, and its shake |
 | `src/scene/zones.ts` | Where you are allowed to stand |
 | `src/scene/seats.ts` | The four seats, and what each one looks at |
 | `src/order/order.ts` | The menu, and the timed ordering sequence |
@@ -244,12 +246,11 @@ fallback when no endpoint is configured.
 
 ## Not built yet
 
-- **Downloaded CC0 assets.** The espresso machine, the stove, the crockery and
-  the stools are now modelled rather than primitive, but they are modelled
-  *here*, in code, from lathed profiles — not scanned or sculpted assets. The
-  tables and the grinder are still primitives. Blocked on reach, not on effort:
-  Poly Haven, its CDN, Sketchfab and ambientCG are all refused at this
-  network's egress proxy. See CREDITS.md.
+- **Downloaded CC0 assets.** Every piece of furniture and equipment in the
+  building is now modelled rather than primitive — but modelled *here*, in
+  code, from lathed and swept profiles, not scanned or sculpted. Blocked on
+  reach, not on effort: Poly Haven, its CDN, Sketchfab and ambientCG are all
+  refused at this network's egress proxy. See CREDITS.md.
 - **A second and third photographic PBR set**, for the same reason. The counter
   is separated from the floor by generating a stone material in code instead;
   the rest is separated by grain scale.

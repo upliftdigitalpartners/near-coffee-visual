@@ -7,6 +7,8 @@ import { useSoapstone } from './surfaces'
 import { EspressoMachine } from './EspressoMachine'
 import { Stove } from './Stove'
 import { Cup, Saucer } from './Crockery'
+import { Table } from './Table'
+import { Grinder } from './Grinder'
 import { Stool } from './Stool'
 import type { SceneLight } from './lighting'
 
@@ -212,25 +214,6 @@ function Steam({ position }: { position: [number, number, number] }) {
 /** What was ordered and where it landed, once it has arrived. */
 export type Served = { tray: [number, number, number]; kind: 'drink' | 'pastry' } | null
 
-/**
- * The grinder, shaking while it grinds.
- *
- * Small and fast: 4mm at 34 rad/s. A grinder does not sway, it buzzes, and an
- * amplitude big enough to read clearly from across the room is big enough to
- * look like the machine is coming apart.
- */
-function Grinder({ grinding, children }: { grinding: boolean; children: ReactNode }) {
-  const group = useRef<THREE.Group>(null)
-  useFrame((state) => {
-    if (!group.current) return
-    const t = state.clock.elapsedTime
-    const a = grinding ? 0.004 : 0
-    group.current.position.x = Math.sin(t * 34) * a
-    group.current.position.y = Math.sin(t * 41 + 1.1) * a * 0.6
-  })
-  return <group ref={group}>{children}</group>
-}
-
 export function Fixtures({
   light,
   bulbsOn,
@@ -309,19 +292,7 @@ export function Fixtures({
       </group>
 
       {/* Your table, just in front of where you are sitting. */}
-      <group position={[0.9, 0, 3.1]}>
-        <mesh position={[0, 0.74, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.62, 0.62, 0.06, 28]} />
-          <primitive object={tableTop} attach="material" />
-        </mesh>
-        <mesh position={[0, 0.36, 0]} castShadow>
-          <cylinderGeometry args={[0.08, 0.11, 0.72, 12]} />
-          <primitive object={carcass} attach="material" />
-        </mesh>
-        <mesh position={[0, 0.02, 0]} castShadow>
-          <cylinderGeometry args={[0.34, 0.34, 0.04, 20]} />
-          <primitive object={carcass} attach="material" />
-        </mesh>
+      <Table position={[0.9, 0, 3.1]} radius={0.62} seed={3} top={tableTop} frame={carcass}>
 
         {/*
          * The table top sits at 0.77; everything on it is measured off that,
@@ -345,18 +316,10 @@ export function Fixtures({
           <boxGeometry args={[0.3, 0.018, 0.22]} />
           <meshStandardMaterial color="#8c7c60" roughness={0.9} />
         </mesh>
-      </group>
+      </Table>
 
       {/* A second table, empty, closer to the door. */}
-      <group position={[-3.2, 0, 0.4]}>
-        <mesh position={[0, 0.74, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.55, 0.55, 0.06, 24]} />
-          <primitive object={tableTop} attach="material" />
-        </mesh>
-        <mesh position={[0, 0.36, 0]} castShadow>
-          <cylinderGeometry args={[0.07, 0.1, 0.72, 12]} />
-          <primitive object={carcass} attach="material" />
-        </mesh>
+      <Table position={[-3.2, 0, 0.4]} radius={0.55} rotation={0.9} seed={11} top={tableTop} frame={carcass}>
         {[0, Math.PI * 0.7].map((a, i) => (
           <Stool
             key={i}
@@ -366,7 +329,7 @@ export function Fixtures({
             leg={carcass}
           />
         ))}
-      </group>
+      </Table>
 
       {/* Bulbs strung down the ridge. Click any of them. */}
       <Interactive label={bulbsOn ? 'put them out' : 'light them'} onClick={onToggleBulbs}>
@@ -390,23 +353,9 @@ export function Fixtures({
         <EspressoMachine />
       </group>
 
+      {/* The grinder, beside it. See Grinder.tsx. */}
       <group position={[4.05, 1.1, 0.42]}>
-        <Grinder grinding={!!grinding}>
-          <mesh position={[0, 0.24, 0]} castShadow>
-            <cylinderGeometry args={[0.1, 0.12, 0.48, 18]} />
-            <meshStandardMaterial color="#2a2e33" roughness={0.4} metalness={0.6} />
-          </mesh>
-          <mesh position={[0, 0.52, 0]} castShadow>
-            <coneGeometry args={[0.11, 0.2, 18]} />
-            <meshStandardMaterial
-              color="#3a2a1c"
-              roughness={0.5}
-              metalness={0.2}
-              transparent
-              opacity={0.8}
-            />
-          </mesh>
-        </Grinder>
+        <Grinder grinding={!!grinding} />
       </group>
 
       {/* Pastry dome, and what is under it. */}
@@ -445,18 +394,18 @@ export function Fixtures({
 
       {/* Two more tables down the room, with stools. */}
       {[
-        { at: [-3.4, 0, 3.4] as const, r: 0.5 },
-        { at: [3.0, 0, 4.2] as const, r: 0.55 },
+        { at: [-3.4, 0, 3.4] as const, r: 0.5, turn: 2.0, seed: 5 },
+        { at: [3.0, 0, 4.2] as const, r: 0.55, turn: 0.35, seed: 8 },
       ].map((t, i) => (
-        <group key={i} position={[t.at[0], t.at[1], t.at[2]]}>
-          <mesh position={[0, 0.74, 0]} castShadow receiveShadow>
-            <cylinderGeometry args={[t.r, t.r, 0.06, 24]} />
-            <primitive object={tableTop} attach="material" />
-          </mesh>
-          <mesh position={[0, 0.36, 0]} castShadow>
-            <cylinderGeometry args={[0.07, 0.1, 0.72, 12]} />
-            <primitive object={carcass} attach="material" />
-          </mesh>
+        <Table
+          key={i}
+          position={[t.at[0], t.at[1], t.at[2]]}
+          radius={t.r}
+          rotation={t.turn}
+          seed={t.seed}
+          top={tableTop}
+          frame={carcass}
+        >
           {[0.6, 2.4, 4.3].map((a, j) => (
             <Stool
               key={j}
@@ -466,7 +415,7 @@ export function Fixtures({
               leg={carcass}
             />
           ))}
-        </group>
+        </Table>
       ))}
 
       {/* A bench along the south wall. */}

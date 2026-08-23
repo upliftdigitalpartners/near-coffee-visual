@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
+import { GRAIN, boardUVs, turnedUVs } from './wood'
 
 /**
  * A turned three-legged stool.
@@ -135,9 +136,10 @@ export function Stool({
     const chord = 2 * rStretch * Math.sin(Math.PI / 3)
 
     return {
-      seat: new THREE.LatheGeometry(seatProfile(), 36),
-      leg: new THREE.LatheGeometry(legProfile(len), 14),
-      stretcher: new THREE.LatheGeometry(stretcherProfile(chord), 10),
+      // Box-projected: a lathe's own UVs ring a flat seat. See wood.ts.
+      seat: boardUVs(new THREE.LatheGeometry(seatProfile(), 36), GRAIN.furniture, 7),
+      leg: turnedUVs(new THREE.LatheGeometry(legProfile(len), 14), GRAIN.furniture, 3),
+      stretcher: turnedUVs(new THREE.LatheGeometry(stretcherProfile(chord), 10), GRAIN.furniture, 6),
       tilt,
       rStretch,
     }

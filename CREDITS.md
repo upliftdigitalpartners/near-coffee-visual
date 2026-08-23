@@ -50,6 +50,8 @@ there is no file to license and no provenance to check.
 | The cast-iron parlour stove | `src/three/Stove.tsx` |
 | The cup, its swept handle and its saucer | `src/three/Crockery.tsx` |
 | The turned three-legged stools | `src/three/Stool.tsx` |
+| The tripod pedestal tables | `src/three/Table.tsx` |
+| The doser coffee grinder | `src/three/Grinder.tsx` |
 | The painted porch sign | `src/wall/sign.ts` |
 | Glazed stoneware for the cups and crockery | `src/three/surfaces.ts` |
 | Crusted snow for the valley floor | `src/three/Backdrop.tsx` |
@@ -59,15 +61,13 @@ there is no file to license and no provenance to check.
 
 ## Assets that were wanted and are not here
 
-The espresso machine, the stove, the crockery and the stools are **modelled
-rather than downloaded**. The intention was CC0 glTF for all of them; every
-source is unreachable from the environment this work was carried out in, so
-they are built in code from lathed profiles instead — see
-`EspressoMachine.tsx`, `Stove.tsx`, `Crockery.tsx` and `Stool.tsx`. That is a
-real improvement on the boxes and cylinders they replaced, and it is not the
-same thing as a scanned or sculpted asset.
-
-The tables and the grinder are **still primitives**.
+Every piece of furniture and equipment in the building is **modelled rather
+than downloaded**. The intention was CC0 glTF for all of it; every source is
+unreachable from the environment this work was carried out in, so it is built
+in code from lathed and swept profiles instead — see `EspressoMachine.tsx`,
+`Stove.tsx`, `Crockery.tsx`, `Stool.tsx`, `Table.tsx` and `Grinder.tsx`. That
+is a real improvement on the boxes and cylinders they replaced, and it is not
+the same thing as a scanned or sculpted asset.
 
 `polyhaven.com`, `dl.polyhaven.org`, `cdn.polyhaven.com`,
 `sketchfab.com` and `ambientcg.com` are all refused at the egress proxy with a
@@ -82,8 +82,8 @@ siding by grain scale rather than by being different timber. See
 `src/three/surfaces.ts` and `GRAIN` in `src/three/wood.ts`.
 
 When those hosts are reachable, or when the files are dropped into `public/`
-by hand, the work is: fetch CC0 models for the tables and the grinder, and
-better ones for the cup, the stools, the stove and the espresso machine; add a
+by hand, the work is: fetch better CC0 models than these — scanned or
+sculpted, with the wear and asymmetry code does not give you; add a
 `CREDITS.md` beside them recording asset name,
 author, source URL and licence; and swap the primitives out. Poly Haven's
 models are uniformly CC0. Sketchfab is **not** — its CC0 filter must be applied
