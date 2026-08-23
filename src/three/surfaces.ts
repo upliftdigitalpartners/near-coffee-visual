@@ -197,7 +197,16 @@ const STONE_TILE = 1.1
  * stays timber, which is what a real conversion would look like: a stone top
  * dropped onto a carpenter's carcass.
  */
-export function useSoapstone() {
+export function useSoapstone(
+  tint = '#b4bab6',
+  /*
+   * The gloss range the roughness map spans. Soapstone is oiled and takes a
+   * sheen; firebrick has been baked at 400 degrees for thirty years and takes
+   * none, and reusing the counter's range on the oven made it read as dark
+   * glazed tile with cracks in it rather than as brick.
+   */
+  rough: [number, number] = [0.34, 0.72],
+) {
   return useMemo(() => {
     const albedo = soapstoneAlbedo()
     const h = heights(albedo, DERIVE)
@@ -205,7 +214,7 @@ export function useSoapstone() {
     const map = new THREE.CanvasTexture(albedo)
     map.colorSpace = THREE.SRGBColorSpace
     const normalMap = normalFrom(h, DERIVE, 2.4)
-    const roughnessMap = roughnessFrom(h, DERIVE, 0.34, 0.72)
+    const roughnessMap = roughnessFrom(h, DERIVE, rough[0], rough[1])
 
     for (const t of [map, normalMap, roughnessMap]) {
       t.wrapS = t.wrapT = THREE.RepeatWrapping
@@ -217,7 +226,7 @@ export function useSoapstone() {
       map,
       normalMap,
       roughnessMap,
-      color: '#b4bab6',
+      color: tint,
       roughness: 1,
       metalness: 0,
       normalScale: new THREE.Vector2(0.7, 0.7),
@@ -226,7 +235,8 @@ export function useSoapstone() {
       // "stone" rather than "grey paint".
       envMapIntensity: 1.15,
     })
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tint, rough[0], rough[1]])
 }
 
 /**

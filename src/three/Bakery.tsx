@@ -6,6 +6,7 @@ import { useRef } from 'react'
 import { BARN } from './Barn'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 import type { SceneLight } from './lighting'
+import { useSoapstone } from './surfaces'
 
 /**
  * The bakery, through the gap in the back wall.
@@ -195,6 +196,18 @@ function OvenGlow({ light }: { light: SceneLight }) {
   const lamp = useRef<THREE.PointLight>(null)
   const door = useRef<THREE.Mesh>(null)
 
+  /*
+   * Firebrick, off the same generator as the counter slab.
+   *
+   * It was a flat colour with no maps at all, which at this distance made it
+   * the most obviously fake object left in the frame — a perfectly smooth
+   * two-metre slab catching one even highlight across its whole face. The
+   * soapstone generator already produces a mottled albedo with normal and
+   * roughness derived from it, and firebrick and soapstone are the same
+   * problem: a dense, matte, unevenly worn stone. Only the tint differs.
+   */
+  const brick = useSoapstone('#8a6a58', [0.72, 0.96])
+
   useFrame((state) => {
     const t = state.clock.elapsedTime
     /*
@@ -212,9 +225,8 @@ function OvenGlow({ light }: { light: SceneLight }) {
   return (
     <group position={[3.4, 0, 8.95]}>
       {/* Deck oven: a brick box with a cast door. */}
-      <mesh position={[0, 0.85, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.85, 0]} castShadow receiveShadow material={brick}>
         <boxGeometry args={[1.5, 1.7, 0.9]} />
-        <meshStandardMaterial color="#4a3a30" roughness={0.94} />
       </mesh>
       <mesh position={[0, 1.02, -0.47]} castShadow>
         <boxGeometry args={[0.86, 0.52, 0.06]} />
@@ -252,20 +264,63 @@ function OvenGlow({ light }: { light: SceneLight }) {
   )
 }
 
+/**
+ * Why this room needed its own bulb colour and a window.
+ *
+ * Measured off the far wall at dusk, the bakery came back rgb(69, 23, 5) — the
+ * green channel a third of red, blue at 2%, which is 93% saturated and about
+ * as close to monochrome as a colour image gets. The barn's own wall, three
+ * metres away through the hatch, measures rgb(103, 84, 64): 38%.
+ *
+ * Three passes at this blamed the wall tint, the oven, and the grade, and each
+ * one helped a little because each was slightly true. None was the cause. The
+ * cause is that the bakery is a closed box lit by exactly one colour. The barn
+ * gets daylight through the door and three hundred gaps, so its orange bulbs
+ * land on top of a blue-white fill and the two average out to warm brown. Seal
+ * the room, take the daylight away, and the same bulb multiplied by the same
+ * brown planks has nothing to lift the blue channel with — every pixel ends up
+ * on one line through colour space, and a room lit by one colour reads as
+ * tinted rather than lit, no matter what you do to the tint.
+ *
+ * So: two illuminants of different colours, which is what an interior needs.
+ * The pendant is a warm white rather than the barn's deep orange — the barn can
+ * carry #ffb257 because daylight balances it and this room cannot — and the
+ * window gets a cool fill that rides the daylight and dies at night, when the
+ * oven takes over as the second colour instead.
+ */
+const PENDANT = new THREE.Color('#ffd9b4')
+
+/**
+ * North sky, and deliberately not the scene's ambient colour.
+ *
+ * Reaching for `light.ambientColor` is the obvious move and it does nothing
+ * here: at golden hour the scene's ambient *is* warm, so the "cool fill" came
+ * in the same colour as the bulb and the room stayed on one line. This window
+ * faces +X, which in this scene is north — the door faces west — and a north
+ * window sees blue sky at every hour including sunset, when the warm light is
+ * all behind the building. So the fill is fixed and cold, and only its
+ * brightness rides the day.
+ */
+const NORTH_SKY = new THREE.Color('#8ba6c6')
+
 export function Bakery({ light, bulbsOn }: { light: SceneLight; bulbsOn: boolean }) {
   const { shell, ceiling, floor } = useBakeryShell()
   const maps = useWoodMaps(GRAIN.siding)
   const furnitureMaps = useWoodMaps(GRAIN.furniture)
 
   /*
-   * Cooler than the barn's furniture, not warmer. Tinted the obvious way — up
-   * toward cream, on the reasoning that a bakery is a warm room — the boards
-   * multiply an already warm plank texture by a warm tint, then get lit by an
-   * orange bulb and an orange oven, and the whole room comes back the colour of
-   * a darkroom safelight. The warmth has to come from the light, not the paint.
+   * Limewashed, which is both the fix and the truth.
+   *
+   * Every bakery that has ever passed an inspection has white walls, because
+   * limewash is cheap, it is mildly antiseptic, and it throws the light around
+   * a room with one small window. It also solves the measurement: bare planks
+   * are about 1 : 0.61 : 0.34 in their own albedo, so under any light at all a
+   * third of the saturation problem is the timber itself, and no lamp colour
+   * fixes that. Washing the boards lifts every channel and lets the grain read
+   * through as texture instead of as colour.
    */
   const boards = useWoodMaterial(maps, {
-    tint: '#cbc6bb',
+    tint: '#efe9dc',
     roughness: 0.98,
     normalScale: 1.2,
     side: THREE.DoubleSide,
@@ -287,8 +342,8 @@ export function Bakery({ light, bulbsOn }: { light: SceneLight; bulbsOn: boolean
    *
    * The first pass had it the other way round and the bakery came back a solid
    * red box: an oven throwing enough light to read by paints every plank the
-   * colour of its own door, and the grade's saturation then finishes the job.
-   * A working bakery has a bulb over the bench and a warm slot at the far end.
+   * colour of its own door. A working bakery has a bulb over the bench and a
+   * warm slot at the far end.
    */
   const bulb = bulbsOn ? Math.max(light.lampIntensity, 1.05) : 0
 
@@ -299,6 +354,26 @@ export function Bakery({ light, bulbsOn }: { light: SceneLight; bulbsOn: boolean
       <mesh geometry={floor} material={boards} receiveShadow />
 
       <OvenGlow light={light} />
+
+      {/*
+       * Daylight through the window, as a second colour rather than as a
+       * source of brightness. It sits just outside the opening at x 4.4,
+       * z 7.3-8.5, and carries the sky's own colour, so the side of the room
+       * facing it goes cool and the side facing the pendant stays warm. That
+       * difference is the whole point — it is what stops every surface sitting
+       * on one line through colour space.
+       *
+       * It rides envIntensity, so it fades out with the day and the oven
+       * becomes the second colour instead after dark.
+       */}
+      <pointLight
+        position={[4.15, 1.75, 7.9]}
+        color={NORTH_SKY}
+        intensity={3.4 + light.envIntensity * 16}
+        distance={9}
+        decay={2}
+        castShadow={false}
+      />
 
       {/* Work bench down the middle, with dough proving under linen. */}
       <group position={[1.4, 0, 7.8]}>
@@ -371,15 +446,15 @@ export function Bakery({ light, bulbsOn }: { light: SceneLight; bulbsOn: boolean
           <sphereGeometry args={[0.05, 16, 12]} />
           <meshStandardMaterial
             color="#fff0d2"
-            emissive={new THREE.Color('#ffb257')}
+            emissive={PENDANT}
             emissiveIntensity={bulb * 3.2}
             roughness={0.25}
           />
         </mesh>
         <pointLight
           position={[0, 2.05, 0]}
-          color={light.lampColor}
-          intensity={bulb * 9}
+          color={PENDANT}
+          intensity={bulb * 10}
           distance={8}
           decay={2}
           castShadow={false}
