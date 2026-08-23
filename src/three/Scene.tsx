@@ -18,6 +18,9 @@ import { Presence } from './Presence'
 import { Shafts } from './Shafts'
 import { Bakery } from './Bakery'
 import { Porch } from './Porch'
+import { Seats } from './Seats'
+import type { Served } from './Fixtures'
+import type { Seat } from '../scene/seats'
 import { Grade } from './Grade'
 import type { Peer } from '../presence/presence'
 import type { Napkin } from '../wall/napkins'
@@ -175,6 +178,11 @@ export function Scene({
   bake,
   onStation,
   onProgress,
+  seat,
+  seatIndex,
+  onSit,
+  served,
+  grinding,
 }: {
   hour: number
   daylight: Daylight
@@ -187,6 +195,11 @@ export function Scene({
   bake: Bake | null
   onStation?: (label: string) => void
   onProgress?: (p: number) => void
+  seat?: Seat | null
+  seatIndex: number | null
+  onSit: (i: number) => void
+  served?: Served
+  grinding?: boolean
 }) {
   const [bulbsOn, setBulbsOn] = useState(true)
   const sun = useRef<THREE.DirectionalLight>(null)
@@ -236,7 +249,7 @@ export function Scene({
       />
 
       <Lights light={light} sun={sun} />
-      <CameraRig onProgress={onProgress} onStation={onStation} />
+      <CameraRig onProgress={onProgress} onStation={onStation} seat={seat} />
 
       <Suspense fallback={null}>
         <Backdrop light={light} />
@@ -253,6 +266,7 @@ export function Scene({
       <Suspense fallback={null}>
         <Porch />
       </Suspense>
+      <Seats onSit={onSit} seated={seatIndex} />
       <NapkinWall napkins={napkins} />
       <Chalkboard bake={bake} />
       <Presence peers={peers} light={light} />
@@ -263,6 +277,8 @@ export function Scene({
         onToggleBulbs={() => setBulbsOn((v) => !v)}
         radioLabel={radioLabel}
         onToggleRadio={onToggleRadio}
+        served={served}
+        grinding={grinding}
         />
       </Suspense>
 

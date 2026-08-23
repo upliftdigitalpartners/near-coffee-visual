@@ -14,7 +14,27 @@ import {
 } from './wall/napkins'
 import { createPresence, type Peer } from './presence/presence'
 import { fetchBake, type Bake } from './wall/bake'
-import { forcedHour, standInNapkins } from './scene/debug'
+import { SEATS } from './scene/seats'
+import {
+  MENU,
+  crossed,
+  isGrinding,
+  readyAt,
+  statusLine,
+  stepsFor,
+  type Item,
+  type OrderState,
+} from './order/order'
+import { Kitchen } from './audio/kitchen'
+
+/**
+ * Where a cup lands when you order standing up.
+ *
+ * On the counter slab, at the near end by the machine — the end you would
+ * actually be standing at, rather than the middle of a four metre counter.
+ */
+const COUNTER_TRAY: [number, number, number] = [4.05, 1.11, 0.55]
+import { forcedHour, forcedSeat, standInNapkins } from './scene/debug'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -47,6 +67,11 @@ export default function App() {
 
   const [bake, setBake] = useState<Bake | null>(null)
   const [station, setStation] = useState('your table')
+
+  const [seatIndex, setSeatIndex] = useState<number | null>(() => forcedSeat())
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [order, setOrder] = useState<OrderState | null>(null)
+  const kitchen = useRef<Kitchen | null>(null)
 
   // Follow the visitor's real clock unless they have taken the wheel.
   useEffect(() => {
@@ -131,6 +156,61 @@ export default function App() {
     }
   }, [draft])
 
+  /*
+   * The order clock.
+   *
+   * Driven by a real timestamp rather than by counting intervals, because a
+   * backgrounded tab throttles timers to once a second and a counted clock
+   * would stretch an eight second coffee into a minute. Sounds fire on steps
+   * the elapsed time has just crossed, so a long frame skips a noise rather
+   * than replaying the sequence out of order.
+   */
+  useEffect(() => {
+    if (!order || order.done) return
+    const started = Date.now() - order.elapsed * 1000
+    const steps = stepsFor(order.item)
+    const ready = readyAt(order.item)
+    let last = order.elapsed
+
+    const id = window.setInterval(() => {
+      const elapsed = (Date.now() - started) / 1000
+      if (soundOn) {
+        for (const step of crossed(steps, last, elapsed)) {
+          if (step.sound) kitchen.current?.play(step.sound, step.seconds)
+        }
+      }
+      last = elapsed
+      setOrder((o) => (o && !o.done ? { ...o, elapsed, done: elapsed >= ready } : o))
+    }, 100)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.item.id, order?.done, soundOn])
+
+  const sit = useCallback((i: number) => {
+    setSeatIndex(i)
+    setMenuOpen(false)
+  }, [])
+
+  const stand = useCallback(() => {
+    setSeatIndex(null)
+    setMenuOpen(false)
+  }, [])
+
+  const orderItem = useCallback(
+    (item: Item) => {
+      if (!kitchen.current) kitchen.current = new Kitchen()
+      if (soundOn) void kitchen.current.resume()
+      setMenuOpen(false)
+      setOrder({
+        item,
+        where: seatIndex === null ? 'counter' : 'table',
+        elapsed: 0,
+        done: false,
+      })
+    },
+    [seatIndex, soundOn],
+  )
+
   // Wind at the barn drives the wind in the room.
   useEffect(() => {
     ambience.current?.update({ windKph: place.weather?.windKph })
@@ -192,6 +272,21 @@ export default function App() {
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
+        seat={seatIndex === null ? null : SEATS[seatIndex]}
+        seatIndex={seatIndex}
+        onSit={sit}
+        served={
+          order?.done
+            ? {
+                tray:
+                  order.where === 'table' && seatIndex !== null
+                    ? SEATS[seatIndex].tray
+                    : COUNTER_TRAY,
+                kind: order.item.kind,
+              }
+            : null
+        }
+        grinding={isGrinding(order)}
       />
 
       <header className="sign">
@@ -307,6 +402,52 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {seatIndex !== null && (
+        <div className="seat-panel">
+          <span className="seat-kicker">seated</span>
+          <h2>{SEATS[seatIndex].label}</h2>
+          <p>{SEATS[seatIndex].passage}</p>
+
+          {order && (
+            <p className={`order-status ${order.done ? 'done' : ''}`}>
+              {statusLine(order)}
+            </p>
+          )}
+
+          {menuOpen ? (
+            <ul className="menu">
+              {MENU.map((item) => (
+                <li key={item.id}>
+                  <button onClick={() => orderItem(item)}>
+                    <span>{item.name}</span>
+                    <span className="menu-price">{item.price}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="seat-actions">
+              <button
+                className="audio-btn on"
+                onClick={() => setMenuOpen(true)}
+                disabled={!!order && !order.done}
+              >
+                {order && !order.done ? 'coming up…' : 'order something'}
+              </button>
+              <button className="audio-btn ghost" onClick={stand}>
+                stand up
+              </button>
+            </div>
+          )}
+
+          {menuOpen && (
+            <button className="audio-btn ghost" onClick={() => setMenuOpen(false)}>
+              never mind
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="presence-note">
         {peers.length === 0

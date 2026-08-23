@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { forcedStop } from '../scene/debug'
 import { clampToZones, floorAt, zoneAt } from '../scene/zones'
+import type { Seat } from '../scene/seats'
 
 /**
  * Walking, rather than being carried.
@@ -130,9 +131,12 @@ const TAP_SLOP = 6
 export function CameraRig({
   onProgress,
   onStation,
+  seat,
 }: {
   onProgress?: (p: number) => void
   onStation?: (label: string) => void
+  /** Non-null while seated. Walking is suspended; looking is not. */
+  seat?: Seat | null
 }) {
   const { camera, gl } = useThree()
 
@@ -143,6 +147,8 @@ export function CameraRig({
   const keys = useRef<Record<string, boolean>>({})
   const moved = useRef(false)
   const lastLabel = useRef('')
+  const seated = useRef<Seat | null>(null)
+  const standAt = useRef(new THREE.Vector3(0.85, EYE, 4.55))
 
   useEffect(() => {
     /*
@@ -155,6 +161,32 @@ export function CameraRig({
     yaw.current = Math.atan2(-d.x, -d.z)
     pitch.current = -0.04
   }, [])
+
+  /*
+   * Taking a seat, and getting up again.
+   *
+   * Where you were standing is remembered, so standing up puts you back on
+   * your feet where you left them rather than teleporting you to the middle of
+   * the room — which is disorienting in a way that is hard to name until it
+   * happens to you.
+   */
+  useEffect(() => {
+    if (seat) {
+      if (!seated.current) standAt.current.copy(pos.current)
+      seated.current = seat
+      const d = seat.look.clone().sub(seat.at)
+      yaw.current = Math.atan2(-d.x, -d.z)
+      pitch.current = THREE.MathUtils.clamp(
+        Math.atan2(d.y, Math.hypot(d.x, d.z)),
+        PITCH_MIN,
+        PITCH_MAX,
+      )
+      walkTo.current = null
+    } else if (seated.current) {
+      seated.current = null
+      pos.current.copy(standAt.current)
+    }
+  }, [seat])
 
   useEffect(() => {
     const el = gl.domElement
@@ -196,6 +228,9 @@ export function CameraRig({
       el.releasePointerCapture?.(e.pointerId)
       const slop = Math.hypot(e.clientX - downX, e.clientY - downY)
       if (slop > TAP_SLOP) return
+      // Seated, a tap on the floor is not a request to walk there. Getting up
+      // is a deliberate act, and it has its own button.
+      if (seated.current) return
 
       /*
        * A tap. Cast the pointer at the floor plane analytically rather than
@@ -221,6 +256,7 @@ export function CameraRig({
     }
 
     const onWheel = (e: WheelEvent) => {
+      if (seated.current) return
       pos.current.addScaledVector(forward(yaw.current), -e.deltaY * 0.0016)
       walkTo.current = null
       moved.current = true
@@ -264,6 +300,27 @@ export function CameraRig({
       const s = STATIONS[THREE.MathUtils.clamp(pin, 0, STATIONS.length - 1)]
       camera.position.copy(s.at)
       camera.lookAt(s.look)
+      return
+    }
+
+    /*
+     * Seated. The head is pinned to the seat and only the neck works — which
+     * is the entire difference, and is why sitting down reads as sitting down
+     * rather than as being moved somewhere shorter.
+     */
+    const chair = seated.current
+    if (chair) {
+      const t = state.clock.elapsedTime
+      // Slower and deeper than standing, per the handoff.
+      const breath = Math.sin(t * 0.44) * 0.02 + Math.sin(t * 0.19) * 0.024
+      camera.position.set(chair.at.x, chair.at.y + breath, chair.at.z)
+      camera.quaternion.setFromEuler(
+        new THREE.Euler(pitch.current, yaw.current, 0, 'YXZ'),
+      )
+      if (chair.label !== lastLabel.current) {
+        lastLabel.current = chair.label
+        onStation?.(chair.label)
+      }
       return
     }
 

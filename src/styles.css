@@ -338,3 +338,127 @@ body {
 .station.shown {
   opacity: 0.5;
 }
+
+/*
+ * Sitting down.
+ *
+ * The panel is the only thing in the overlay that takes a corner to itself, and
+ * it earns it — while you are seated it is the whole interface. Same chip
+ * treatment as everything else so it reads as part of the room's furniture
+ * rather than a modal dropped on top: the blur, the gold hairline, the deep
+ * text shadow the pale type needs against snow.
+ */
+.seat-panel {
+  position: fixed;
+  right: 34px;
+  bottom: 34px;
+  width: min(370px, calc(100vw - 68px));
+  padding: 26px 28px 24px;
+  background: rgba(18, 13, 10, 0.82);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(184, 147, 90, 0.16);
+  border-radius: 3px;
+  z-index: 10;
+  animation: seat-in 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes seat-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+.seat-kicker {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #b8935a;
+}
+
+.seat-panel h2 {
+  margin: 10px 0 12px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 400;
+  font-size: 25px;
+  color: #f0e8dc;
+}
+
+.seat-panel p {
+  margin: 0 0 16px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.9;
+  color: rgba(240, 232, 220, 0.8);
+}
+
+/*
+ * The status line holds its own height whether or not there is text in it. The
+ * ordering sequence ends on an empty line before the arrival message lands, and
+ * without a reserved row the whole panel jumps at the moment the coffee
+ * arrives — which is the one moment it should be still.
+ */
+.order-status {
+  min-height: 1.9em;
+  color: rgba(196, 168, 130, 0.95) !important;
+  font-style: italic;
+}
+
+.order-status.done {
+  color: #c4a882 !important;
+  font-style: normal;
+}
+
+.seat-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.menu {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.menu li + li {
+  border-top: 1px solid rgba(184, 147, 90, 0.12);
+}
+
+.menu button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  padding: 9px 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 14.5px;
+  letter-spacing: 0.04em;
+  color: rgba(240, 232, 220, 0.88);
+  text-align: left;
+  transition: color 0.18s, padding-left 0.18s;
+}
+
+.menu button:hover {
+  color: #f0e8dc;
+  padding-left: 8px;
+}
+
+.menu-price {
+  color: rgba(184, 147, 90, 0.8);
+  font-size: 12.5px;
+}
+
+@media (max-width: 720px) {
+  .seat-panel {
+    right: 16px;
+    left: 16px;
+    bottom: 16px;
+    width: auto;
+    padding: 20px 20px 18px;
+  }
+}

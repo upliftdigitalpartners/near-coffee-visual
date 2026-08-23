@@ -205,18 +205,44 @@ function Steam({ position }: { position: [number, number, number] }) {
   )
 }
 
+/** What was ordered and where it landed, once it has arrived. */
+export type Served = { tray: [number, number, number]; kind: 'drink' | 'pastry' } | null
+
+/**
+ * The grinder, shaking while it grinds.
+ *
+ * Small and fast: 4mm at 34 rad/s. A grinder does not sway, it buzzes, and an
+ * amplitude big enough to read clearly from across the room is big enough to
+ * look like the machine is coming apart.
+ */
+function Grinder({ grinding, children }: { grinding: boolean; children: ReactNode }) {
+  const group = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (!group.current) return
+    const t = state.clock.elapsedTime
+    const a = grinding ? 0.004 : 0
+    group.current.position.x = Math.sin(t * 34) * a
+    group.current.position.y = Math.sin(t * 41 + 1.1) * a * 0.6
+  })
+  return <group ref={group}>{children}</group>
+}
+
 export function Fixtures({
   light,
   bulbsOn,
   onToggleBulbs,
   radioLabel,
   onToggleRadio,
+  served,
+  grinding,
 }: {
   light: SceneLight
   bulbsOn: boolean
   onToggleBulbs: () => void
   radioLabel: string
   onToggleRadio?: () => void
+  served?: Served
+  grinding?: boolean
 }) {
   const stone = useSoapstone()
   const china = useStoneware()
@@ -372,14 +398,16 @@ export function Fixtures({
             <meshStandardMaterial color="#7d838a" roughness={0.3} metalness={0.85} />
           </mesh>
         ))}
-        <mesh position={[0.05, 0.24, -0.52]} castShadow>
-          <cylinderGeometry args={[0.1, 0.12, 0.48, 18]} />
-          <meshStandardMaterial color="#2a2e33" roughness={0.4} metalness={0.6} />
-        </mesh>
-        <mesh position={[0.05, 0.52, -0.52]} castShadow>
-          <coneGeometry args={[0.11, 0.2, 18]} />
-          <meshStandardMaterial color="#3a2a1c" roughness={0.5} metalness={0.2} transparent opacity={0.8} />
-        </mesh>
+        <Grinder grinding={!!grinding}>
+          <mesh position={[0.05, 0.24, -0.52]} castShadow>
+            <cylinderGeometry args={[0.1, 0.12, 0.48, 18]} />
+            <meshStandardMaterial color="#2a2e33" roughness={0.4} metalness={0.6} />
+          </mesh>
+          <mesh position={[0.05, 0.52, -0.52]} castShadow>
+            <coneGeometry args={[0.11, 0.2, 18]} />
+            <meshStandardMaterial color="#3a2a1c" roughness={0.5} metalness={0.2} transparent opacity={0.8} />
+          </mesh>
+        </Grinder>
       </group>
 
       {/* Pastry dome, and what is under it. */}
@@ -482,6 +510,41 @@ export function Fixtures({
           </mesh>
         )
       })}
+
+      {/*
+       * What you ordered, once it has arrived.
+       *
+       * Placed in world space rather than parented to a table, because it can
+       * land on any of four seats or on the counter, and the seat data already
+       * carries the coordinate. A drink gets its own steam source; a pastry
+       * does not, which is most of what distinguishes them at this size.
+       */}
+      {served && (
+        <group position={served.tray}>
+          {served.kind === 'drink' ? (
+            <>
+              <mesh castShadow receiveShadow>
+                <cylinderGeometry args={[0.088, 0.084, 0.012, 28]} />
+                <primitive object={china} attach="material" />
+              </mesh>
+              <mesh position={[0, 0.05, 0]} castShadow>
+                <cylinderGeometry args={[0.055, 0.045, 0.088, 28]} />
+                <primitive object={china} attach="material" />
+              </mesh>
+              <mesh position={[0, 0.081, 0]}>
+                <cylinderGeometry args={[0.048, 0.048, 0.004, 28]} />
+                <meshStandardMaterial color="#38200f" roughness={0.2} />
+              </mesh>
+              <Steam position={[0, 0.095, 0]} />
+            </>
+          ) : (
+            <mesh position={[0, 0.03, 0]} rotation={[0, 0.6, 0]} castShadow receiveShadow>
+              <capsuleGeometry args={[0.036, 0.055, 4, 12]} />
+              <meshStandardMaterial color="#a8712f" roughness={0.72} />
+            </mesh>
+          )}
+        </group>
+      )}
 
       {/* Wood stove in the corner — the reason the place is habitable. */}
       <group position={[-4.4, 0, 4.2]}>

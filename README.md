@@ -92,6 +92,9 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | `src/three/Bakery.tsx` | The room through the back wall, and its oven |
 | `src/three/Porch.tsx` | Deck, posts, shed roof, bench and sign |
 | `src/scene/zones.ts` | Where you are allowed to stand |
+| `src/scene/seats.ts` | The four seats, and what each one looks at |
+| `src/order/order.ts` | The menu, and the timed ordering sequence |
+| `src/audio/kitchen.ts` | Grinder, steam and chime, synthesised |
 | `src/three/CameraRig.tsx` | Damped look, scroll dolly, breathing |
 | `src/three/lighting.ts` | Daylight palette → a physical sun |
 | `src/three/wood.ts` | The barn's timber, at three grain scales |
@@ -198,6 +201,7 @@ change. Three query parameters pin it, and are inert unless present:
 ?hour=19.6     force the time of day
 ?stop=3        stand exactly at camera station 3, no easing, no sway
 ?napkins=11    fill the wall with stand-in notes
+?sit=0         start seated, for checking the seat views and the panel
 ```
 
 `?hour=19.6` is the one to use. Dusk is where every rendering bug in this scene
@@ -241,9 +245,6 @@ fallback when no endpoint is configured.
   intention is CC0 glTF assets rather than modelling them by hand. Blocked on
   reach, not on effort: Poly Haven, its CDN, Sketchfab and ambientCG are all
   refused at this network's egress proxy. See CREDITS.md.
-- **Sitting down, and ordering.** The handoff specifies four seats that drop
-  the eye to 1.16 and a timed ordering sequence with synthesised sound. Neither
-  exists. It is the largest remaining piece.
 - **A second and third photographic PBR set**, for the same reason. The counter
   is separated from the floor by generating a stone material in code instead;
   the rest is separated by grain scale.

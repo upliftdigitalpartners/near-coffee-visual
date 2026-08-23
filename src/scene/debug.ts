@@ -41,6 +41,21 @@ export function frozen(): boolean {
 }
 
 /**
+ * Start seated, via `?sit=0`.
+ *
+ * Sitting down is a click on a marker in the scene, which a screenshot cannot
+ * perform, so without this the seated frame and the order panel cannot be
+ * checked at all — and they are the two things hardest to get right from
+ * arithmetic.
+ */
+export function forcedSeat(): number | null {
+  const v = params()?.get('sit')
+  if (v == null) return null
+  const n = Number(v)
+  return Number.isInteger(n) ? n : null
+}
+
+/**
  * Stand-in notes for the wall, via `?napkins=12`.
  *
  * The napkin wall cannot be framed against an empty wall — the whole question
