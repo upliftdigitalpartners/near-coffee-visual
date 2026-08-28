@@ -2,14 +2,11 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
+import { BARN } from '../scene/barn'
+import { FLOOR_UV, WALL_UV, useFloorMacro, useWallMacro, withMacro } from './macro'
 
 /**
  * The barn.
- *
- * A Mormon Row homestead barn, of the kind standing in Grand Teton National
- * Park a couple of miles off the Snake River — timber frame, vertical
- * board-and-batten siding, gable roof, and a big sliding door on the gable end
- * that frames the range when it is open.
  *
  * The single most important decision in this file is that the siding is built
  * from individual boards with real gaps between them, rather than a wall with
@@ -17,37 +14,11 @@ import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './w
  * stripes across the floor and the counter, and no amount of texturing
  * reproduces that. It is the reason to use 3D here at all.
  *
- * Units are metres. The door faces -Z, which is west — so the evening sun
- * comes straight in through the opening and along the gaps in the south wall.
+ * Dimensions live in scene/barn.ts, and are re-exported below because half
+ * the scene measures itself against them.
  */
 
-export const BARN = {
-  halfWidth: 6,
-  frontZ: -4,
-  backZ: 6,
-  eaveY: 4.6,
-  ridgeY: 7.2,
-  /**
-   * The open sliding door on the gable end.
-   *
-   * Kept to 3.6m. At five metres across it stops being a door you look
-   * through and becomes a missing wall: stand anywhere near it and the
-   * opening subtends more than the entire field of view, so the barn
-   * disappears and you are left looking at an unframed photograph.
-   */
-  door: { x0: -1.8, x1: 1.8, y1: 3.4 },
-  /** A small opening on the south wall, for cross light. */
-  sideWindow: { z0: 0.4, z1: 2.2, y0: 1.9, y1: 3.1 },
-  /**
-   * The way through to the bakery, cut in the back wall.
-   *
-   * Off-centre on purpose. Centred, it lines up with the open door at the
-   * other end and you can see straight out of the building from inside the
-   * bakery — which makes the barn read as a tunnel rather than a room with
-   * another room off it.
-   */
-  hatch: { x0: 1.5, x1: 3.3, y1: 2.35 },
-} as const
+export { BARN } from '../scene/barn'
 
 const BOARD_W = 0.30
 const BOARD_T = 0.045
@@ -344,18 +315,39 @@ export function Barn() {
    * from. Running the floor on its own map set is what stopped it and the
    * tables reading as one continuous surface.
    */
-  const siding = useWoodMaterial(maps, {
+  const sidingBase = useWoodMaterial(maps, {
     tint: '#ffffff',
     roughness: 1,
     normalScale: 1.35,
     side: THREE.DoubleSide,
   })
-  const timber = useWoodMaterial(maps, { tint: '#c4a882', roughness: 0.95, normalScale: 1.1 })
-  const floorMat = useWoodMaterial(floorMaps, {
-    tint: '#7d6242',
-    roughness: 0.62,
+  const timberBase = useWoodMaterial(maps, { tint: '#c4a882', roughness: 0.95, normalScale: 1.1 })
+  const floorBase = useWoodMaterial(floorMaps, {
+    tint: '#8a6d4b',
+    roughness: 0.72,
     normalScale: 0.7,
   })
+
+  /*
+   * And over all three, the layer that says where in the building you are.
+   * See macro.ts — the tiled photograph carries the grain, and this carries
+   * the walked path, the grime line up the wall, and the black patch by the
+   * stove. Neither works without the other.
+   */
+  const wall = useWallMacro()
+  const ground = useFloorMacro()
+  const siding = useMemo(
+    () => withMacro(sidingBase, wall, WALL_UV, 'macro-wall'),
+    [sidingBase, wall],
+  )
+  const timber = useMemo(
+    () => withMacro(timberBase, wall, WALL_UV, 'macro-wall'),
+    [timberBase, wall],
+  )
+  const floorMat = useMemo(
+    () => withMacro(floorBase, ground, FLOOR_UV, 'macro-floor'),
+    [floorBase, ground],
+  )
 
   return (
     <group>
