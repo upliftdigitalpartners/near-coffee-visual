@@ -421,3 +421,136 @@ export function useBrass() {
     [],
   )
 }
+
+/**
+ * Powder-coated steel, with coffee in it.
+ *
+ * The grinder was wearing the stove's cast iron, and the two are not the same
+ * material at all. A stove casting is sand-cast, matte and pitted; a grinder
+ * body is a smooth shell sprayed with epoxy powder and baked, which comes out
+ * semi-gloss with a fine orange-peel ripple. Reusing the iron made the machine
+ * look like a stove part, and — worse — made it look unused.
+ *
+ * Because that is the other half of this. A grinder in a working café is never
+ * clean. Fine grounds settle into every horizontal surface and every crease
+ * within a foot of the doser, and the coat gets chipped down to bright metal
+ * at the corners people knock portafilters against. Those two marks are most
+ * of what separates a machine somebody uses from a render of a machine.
+ *
+ * Albedo and roughness are drawn in one pass rather than two, so that every
+ * chip is shinier and every speck of coffee is rougher *in the same place*.
+ * Drawing them in separate loops off the same seed would work right up until
+ * someone edited one loop.
+ */
+export function useEnamel(tint = '#2b2825', dust = 1) {
+  return useMemo(() => {
+    const [ac, actx] = canvas(512)
+    const [rc, rctx] = canvas(512)
+    const rand = seeded(4004 + Math.round(dust * 97))
+
+    actx.fillStyle = tint
+    actx.fillRect(0, 0, 512, 512)
+    // 0.34 — semi-gloss. Enamel is not a mirror and it is not chalk.
+    rctx.fillStyle = 'rgb(87,87,87)'
+    rctx.fillRect(0, 0, 512, 512)
+
+    /*
+     * Orange peel. Powder coat never lies perfectly flat: it pulls into a
+     * fine dimpling as it cures, and that dimpling is what breaks a highlight
+     * on a curved shell into something that reads as a sprayed finish rather
+     * than as plastic.
+     */
+    for (let i = 0; i < 900; i++) {
+      const x = rand() * 512
+      const y = rand() * 512
+      const r = 3 + rand() * 9
+      const up = rand() > 0.5
+      const g = rctx.createRadialGradient(x, y, 0, x, y, r)
+      g.addColorStop(0, up ? 'rgba(112,112,112,0.30)' : 'rgba(64,64,64,0.30)')
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      rctx.fillStyle = g
+      rctx.beginPath()
+      rctx.arc(x, y, r, 0, Math.PI * 2)
+      rctx.fill()
+    }
+
+    /*
+     * Chips, down to bare metal — and deliberately few.
+     *
+     * A coat chips at the corners and edges people knock portafilters
+     * against, not evenly across a flat panel, and a tiling map has no idea
+     * where the edges of the object are. Thirty of them at this repeat came
+     * out as eighty bright specks sprayed over the shell, which read as
+     * stars rather than as damage. Eight dim ones are honest about what a
+     * flat map can do; the rest of the wear is carried by the dust, which
+     * genuinely does settle everywhere.
+     */
+    for (let i = 0; i < 8; i++) {
+      const x = rand() * 512
+      const y = rand() * 512
+      const r = 0.8 + rand() * 2
+      actx.fillStyle = `rgba(104,106,104,${0.28 + rand() * 0.3})`
+      actx.beginPath()
+      actx.ellipse(x, y, r, r * (0.5 + rand()), rand() * 3, 0, Math.PI * 2)
+      actx.fill()
+      rctx.fillStyle = 'rgba(52,52,52,0.7)'
+      rctx.beginPath()
+      rctx.ellipse(x, y, r, r * 0.8, 0, 0, Math.PI * 2)
+      rctx.fill()
+    }
+
+    // Grounds. Dark, matte, and small enough to read as dust rather than dirt.
+    const specks = Math.round(1500 * dust)
+    for (let i = 0; i < specks; i++) {
+      const x = rand() * 512
+      const y = rand() * 512
+      const r = 0.4 + rand() * 1.3
+      const a = 0.16 + rand() * 0.4
+      actx.fillStyle = `rgba(38,22,12,${a})`
+      actx.beginPath()
+      actx.arc(x, y, r, 0, Math.PI * 2)
+      actx.fill()
+      rctx.fillStyle = `rgba(215,215,215,${a})`
+      rctx.beginPath()
+      rctx.arc(x, y, r * 1.5, 0, Math.PI * 2)
+      rctx.fill()
+    }
+
+    // And where it has been wiped rather than cleaned: soft matte smears.
+    for (let i = 0; i < Math.round(9 * dust); i++) {
+      const x = rand() * 512
+      const y = rand() * 512
+      const r = 22 + rand() * 60
+      const g = rctx.createRadialGradient(x, y, 0, x, y, r)
+      g.addColorStop(0, 'rgba(190,190,190,0.35)')
+      g.addColorStop(1, 'rgba(190,190,190,0)')
+      rctx.fillStyle = g
+      rctx.beginPath()
+      rctx.arc(x, y, r, 0, Math.PI * 2)
+      rctx.fill()
+    }
+
+    const map = new THREE.CanvasTexture(ac)
+    map.colorSpace = THREE.SRGBColorSpace
+    const roughnessMap = new THREE.CanvasTexture(rc)
+    roughnessMap.colorSpace = THREE.NoColorSpace
+    const normalMap = normalFrom(heights(rc, DERIVE), DERIVE, 0.6)
+    for (const t of [map, roughnessMap, normalMap]) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping
+      t.repeat.set(1.6, 1.6)
+      t.anisotropy = 8
+    }
+
+    return new THREE.MeshStandardMaterial({
+      map,
+      roughnessMap,
+      normalMap,
+      roughness: 1,
+      // Coated, not bare. A high metalness here is what made the old body
+      // read as a polished casting rather than as a painted shell.
+      metalness: 0.25,
+      normalScale: new THREE.Vector2(0.45, 0.45),
+      envMapIntensity: 0.9,
+    })
+  }, [tint, dust])
+}

@@ -8,6 +8,7 @@ import { EspressoMachine } from './EspressoMachine'
 import { Stove } from './Stove'
 import { Cup, Saucer } from './Crockery'
 import { Table } from './Table'
+import { useTableTop } from './tabletop'
 import { Grinder } from './Grinder'
 import { Stool } from './Stool'
 import type { SceneLight } from './lighting'
@@ -241,6 +242,16 @@ export function Fixtures({
   /* The back shelf and the pastry board stay timber: a stone top dropped onto
    * a carpenter's carcass is what a real conversion looks like. */
   const shelfTop = useFurnitureWood('#6b543a', 0.7)
+  /*
+   * A worn top per table. See tabletop.ts — boards laid out for real, a
+   * polished middle, and cup rings placed on the table rather than tiled.
+   * Yours is the one you sit 60cm from, so it gets four times the pixels of
+   * the three you only see from across the room.
+   */
+  const mine = useTableTop(3, 0.62, 1024)
+  const byTheDoor = useTableTop(11, 0.55)
+  const byTheStove = useTableTop(5, 0.5)
+  const byTheCounter = useTableTop(8, 0.55)
 
   return (
     <group>
@@ -292,7 +303,7 @@ export function Fixtures({
       </group>
 
       {/* Your table, just in front of where you are sitting. */}
-      <Table position={[0.9, 0, 3.1]} radius={0.62} seed={3} top={tableTop} frame={carcass}>
+      <Table position={[0.9, 0, 3.1]} radius={0.62} seed={3} top={tableTop} face={mine} frame={carcass}>
 
         {/*
          * The table top sits at 0.77; everything on it is measured off that,
@@ -319,7 +330,15 @@ export function Fixtures({
       </Table>
 
       {/* A second table, empty, closer to the door. */}
-      <Table position={[-3.2, 0, 0.4]} radius={0.55} rotation={0.9} seed={11} top={tableTop} frame={carcass}>
+      <Table
+        position={[-3.2, 0, 0.4]}
+        radius={0.55}
+        rotation={0.9}
+        seed={11}
+        top={tableTop}
+        face={byTheDoor}
+        frame={carcass}
+      >
         {[0, Math.PI * 0.7].map((a, i) => (
           <Stool
             key={i}
@@ -394,8 +413,8 @@ export function Fixtures({
 
       {/* Two more tables down the room, with stools. */}
       {[
-        { at: [-3.4, 0, 3.4] as const, r: 0.5, turn: 2.0, seed: 5 },
-        { at: [3.0, 0, 4.2] as const, r: 0.55, turn: 0.35, seed: 8 },
+        { at: [-3.4, 0, 3.4] as const, r: 0.5, turn: 2.0, seed: 5, face: byTheStove },
+        { at: [3.0, 0, 4.2] as const, r: 0.55, turn: 0.35, seed: 8, face: byTheCounter },
       ].map((t, i) => (
         <Table
           key={i}
@@ -404,6 +423,7 @@ export function Fixtures({
           rotation={t.turn}
           seed={t.seed}
           top={tableTop}
+          face={t.face}
           frame={carcass}
         >
           {[0.6, 2.4, 4.3].map((a, j) => (

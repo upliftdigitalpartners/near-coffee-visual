@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>texture proof</title>
+<!--
+  Dev-only. Lives at the repo root rather than in public/, so vite serves it
+  at /texture-proof.html during `npm run dev` and does not copy it into dist.
+
+  It draws a table's three generated maps side by side, at their real size,
+  with no lighting on them. That is the whole point: a wear pass cannot be
+  judged from a render, because a polished patch in the middle of a table and
+  the window reflected off that patch are the same handful of pixels. The
+  first version of tabletop.ts drew the wear at the albedo's resolution into
+  a half-size roughness canvas, so every cup ring landed at double
+  coordinates and the polish covered a quarter of the table from the wrong
+  centre — invisible in the scene, obvious here.
+-->
+<body style="margin:0;background:#111">
+<script type="module">
+import { tableTopMaps } from '/src/three/tabletop.ts'
+const load = (u) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = u })
+const [m, ro, n] = await Promise.all([
+  load('/textures/planks/diff_1k.jpg'),
+  load('/textures/planks/rough_1k.jpg'),
+  load('/textures/planks/nor_1k.jpg'),
+])
+const [a, r, nm] = tableTopMaps({ map: m, roughnessMap: ro, normalMap: n }, 3, 0.62, 1024)
+for (const c of [a, r, nm]) { c.style.width = '426px'; c.style.imageRendering = 'pixelated'; document.body.append(c) }
+document.title = 'ready'
+</script>

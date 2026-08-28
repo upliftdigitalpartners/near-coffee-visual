@@ -52,6 +52,8 @@ there is no file to license and no provenance to check.
 | The turned three-legged stools | `src/three/Stool.tsx` |
 | The tripod pedestal tables | `src/three/Table.tsx` |
 | The doser coffee grinder | `src/three/Grinder.tsx` |
+| Worn table tops — boards, polish and cup rings | `src/three/tabletop.ts` |
+| Powder-coated enamel, chipped and dusted with grounds | `src/three/surfaces.ts` |
 | The painted porch sign | `src/wall/sign.ts` |
 | Glazed stoneware for the cups and crockery | `src/three/surfaces.ts` |
 | Crusted snow for the valley floor | `src/three/Backdrop.tsx` |

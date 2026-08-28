@@ -1,7 +1,7 @@
 import { useMemo, useRef, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { useBrass, useCastIron, useChrome } from './surfaces'
+import { useBrass, useChrome, useEnamel } from './surfaces'
 
 /**
  * The shop grinder.
@@ -139,7 +139,14 @@ function Shake({ grinding, children }: { grinding: boolean; children: ReactNode 
 }
 
 export function Grinder({ grinding = false }: { grinding?: boolean }) {
-  const iron = useCastIron()
+  /*
+   * Powder coat, not cast iron — see useEnamel in surfaces.ts. The doser end
+   * carries three times the coffee dust of the tower above it, because that
+   * is where the grounds come out; a machine dusted evenly from the lid to
+   * the feet reads as a dirty object rather than a used one.
+   */
+  const shell = useEnamel('#2b2825', 0.55)
+  const dusty = useEnamel('#2b2825', 1.7)
   const chrome = useChrome()
   const brass = useBrass()
 
@@ -169,8 +176,8 @@ export function Grinder({ grinding = false }: { grinding?: boolean }) {
 
   return (
     <Shake grinding={grinding}>
-      <mesh geometry={geo.base} material={iron} castShadow receiveShadow />
-      <mesh geometry={geo.body} material={iron} castShadow receiveShadow />
+      <mesh geometry={geo.base} material={dusty} castShadow receiveShadow />
+      <mesh geometry={geo.body} material={shell} castShadow receiveShadow />
 
       {/*
        * The doser, hanging off the front. It overlaps the body on purpose —
@@ -179,7 +186,7 @@ export function Grinder({ grinding = false }: { grinding?: boolean }) {
        * that two primitives were placed next to each other.
        */}
       <group position={[-0.1, 0.19, 0]}>
-        <mesh material={iron} castShadow receiveShadow>
+        <mesh material={dusty} castShadow receiveShadow>
           <cylinderGeometry args={[0.105, 0.1, 0.13, 26]} />
         </mesh>
         <mesh geometry={geo.doserLid} material={chrome} position={[0, 0.065, 0]} castShadow />
@@ -192,7 +199,7 @@ export function Grinder({ grinding = false }: { grinding?: boolean }) {
          * pulls it. Angled down and forward at rest.
          */}
         <group rotation={[0, 0.55, 0]}>
-          <mesh position={[-0.15, -0.012, 0]} rotation={[0, 0, -0.14]} material={iron} castShadow>
+          <mesh position={[-0.15, -0.012, 0]} rotation={[0, 0, -0.14]} material={shell} castShadow>
             <boxGeometry args={[0.15, 0.014, 0.03]} />
           </mesh>
           <mesh position={[-0.222, -0.022, 0]} castShadow>
@@ -203,7 +210,7 @@ export function Grinder({ grinding = false }: { grinding?: boolean }) {
       </group>
 
       {/* Chute, and the fork a portafilter rests in while the doser turns. */}
-      <mesh position={[-0.14, 0.1, 0]} material={iron} castShadow>
+      <mesh position={[-0.14, 0.1, 0]} material={dusty} castShadow>
         <boxGeometry args={[0.07, 0.06, 0.075]} />
       </mesh>
       {[-0.052, 0.052].map((z) => (

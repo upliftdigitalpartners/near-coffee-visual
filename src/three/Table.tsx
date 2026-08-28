@@ -43,6 +43,13 @@ const LEG_Y = 0.235
  * Widest at mid-thickness rather than at the corners, which is what a
  * round-over bit actually leaves, and is why the highlight sits in a band
  * rather than on an edge.
+ *
+ * The profile stops at the top of the roundover instead of closing across the
+ * middle, because the flat face is a separate disc carrying its own worn map
+ * (see tabletop.ts) and the two meet exactly at `r - 0.02`. Putting the
+ * material change there is not a compromise: the roundover is where a real
+ * top stops being wiped flat and starts being handled, so the wear genuinely
+ * changes at that line.
  */
 function topProfile(r: number): THREE.Vector2[] {
   const u = TOP_Y - THICK
@@ -57,7 +64,6 @@ function topProfile(r: number): THREE.Vector2[] {
     [r - 0.002, TOP_Y - 0.016],
     [r - 0.011, TOP_Y - 0.004],
     [r - 0.02, TOP_Y],
-    [0.0, TOP_Y],
   ]
   return p.map(([x, y]) => new THREE.Vector2(x, y))
 }
@@ -169,6 +175,7 @@ export function Table({
   rotation = 0,
   seed = 1,
   top,
+  face,
   frame,
   children,
 }: {
@@ -177,7 +184,10 @@ export function Table({
   rotation?: number
   /** Which boards this one was glued up from. Two tables should not match. */
   seed?: number
+  /** The edge and the underside. */
   top: THREE.Material
+  /** The flat face, worn. */
+  face: THREE.Material
   frame: THREE.Material
   children?: ReactNode
 }) {
@@ -192,6 +202,7 @@ export function Table({
       // Box-projected, or the grain wraps into a bullseye. See wood.ts.
       top: boardUVs(new THREE.LatheGeometry(topProfile(radius), 44), GRAIN.furniture, seed),
       column: turnedUVs(new THREE.LatheGeometry(columnProfile(), 28), GRAIN.furniture, seed + 1),
+      face: new THREE.CircleGeometry(radius - 0.02, 56),
       leg: legGeometry(rFoot),
       pad: turnedUVs(new THREE.LatheGeometry(padProfile(), 14), GRAIN.furniture, 2),
       rFoot,
@@ -201,6 +212,18 @@ export function Table({
   return (
     <group position={position} rotation={[0, rotation, 0]}>
       <mesh geometry={geo.top} material={top} castShadow receiveShadow />
+      {/*
+       * The face you put a cup on. CircleGeometry's own UVs already run 0..1
+       * across the disc, which is exactly the non-tiling mapping the worn map
+       * wants — no repeat, no wrap, one texture for one table.
+       */}
+      <mesh
+        geometry={geo.face}
+        material={face}
+        position={[0, TOP_Y, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      />
       <mesh geometry={geo.column} material={frame} castShadow receiveShadow />
       {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((a, i) => (
         <group key={i} rotation={[0, -a, 0]}>
