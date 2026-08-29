@@ -55,6 +55,7 @@ there is no file to license and no provenance to check.
 | Worn table tops — boards, polish and cup rings | `src/three/tabletop.ts` |
 | Powder-coated enamel, chipped and dusted with grounds | `src/three/surfaces.ts` |
 | Walked paths, threshold grit and the grime up the walls | `src/three/macro.ts` |
+| Roof dust, eave bleaching and the stove's smoke stain | `src/three/macro.ts` |
 | The painted porch sign | `src/wall/sign.ts` |
 | Glazed stoneware for the cups and crockery | `src/three/surfaces.ts` |
 | Crusted snow for the valley floor | `src/three/Backdrop.tsx` |

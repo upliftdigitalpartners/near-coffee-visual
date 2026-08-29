@@ -148,15 +148,51 @@ export function Stove({ light }: { light: SceneLight }) {
         <boxGeometry args={[0.4, 0.03, 0.12]} />
       </mesh>
 
-      {/* Collar and flue, up through the roof. */}
+      {/*
+       * Collar and flue, up through the roof — and this time actually up
+       * through it.
+       *
+       * The pipe used to stop at 3.3m, which is a metre and a half short of
+       * the sheathing above it, so a cast-iron stove was venting into the
+       * middle of the room. From the floor you look along the flue rather
+       * than at it and it reads as continuing, which is how it survived; it
+       * is unmissable the moment anyone looks up, and looking up is the whole
+       * point of a barn. The roof plane is at 5.29m over this corner, so the
+       * pipe runs to 5.9 and stands half a metre proud outside.
+       */}
       <mesh geometry={geo.collar} material={iron} position={[0, 0.96, 0]} castShadow />
-      <mesh position={[0, 2.15, 0]} material={iron} castShadow>
-        <cylinderGeometry args={[0.085, 0.085, 2.3, 16]} />
+      <mesh position={[0, 3.45, 0]} material={iron} castShadow>
+        <cylinderGeometry args={[0.085, 0.085, 4.9, 16]} />
       </mesh>
-      {/* The band where two lengths of pipe join. */}
-      <mesh position={[0, 1.5, 0]} material={iron} castShadow>
-        <cylinderGeometry args={[0.095, 0.095, 0.05, 16]} />
+      {/* The bands where lengths of pipe join. */}
+      {[1.5, 3.1, 4.6].map((y) => (
+        <mesh key={y} position={[0, y, 0]} material={iron} castShadow>
+          <cylinderGeometry args={[0.095, 0.095, 0.05, 16]} />
+        </mesh>
+      ))}
+      {/*
+       * The storm collar where it passes the sheathing. Turned about Y rather
+       * than cut to the pitch: the roof crosses it at 23 degrees, and a cone
+       * tall enough to span that meets the boards in an ellipse and covers
+       * the join all the way round without anything having to line up.
+       */}
+      <mesh position={[0, 5.29, 0]} material={iron} castShadow>
+        <cylinderGeometry args={[0.1, 0.3, 0.34, 20, 1, true]} />
       </mesh>
+      {/* Rain cap, outside. */}
+      <mesh position={[0, 6.02, 0]} material={iron} castShadow>
+        <coneGeometry args={[0.19, 0.16, 16]} />
+      </mesh>
+      {[0.6, 2.7, 4.8].map((a) => (
+        <mesh
+          key={a}
+          position={[Math.cos(a) * 0.075, 5.88, Math.sin(a) * 0.075]}
+          material={iron}
+          castShadow
+        >
+          <cylinderGeometry args={[0.008, 0.008, 0.14, 6]} />
+        </mesh>
+      ))}
 
       <pointLight
         ref={lamp}

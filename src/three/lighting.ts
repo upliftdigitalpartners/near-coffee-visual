@@ -29,6 +29,9 @@ export type SceneLight = {
   ambientIntensity: number
   /** Bounce off the valley floor coming back in through the door. */
   bounceColor: THREE.Color
+  /** What comes back up off the floorboards inside. Lights every soffit. */
+  floorBounce: THREE.Color
+  floorBounceIntensity: number
   bounceIntensity: number
   fogColor: THREE.Color
   fogDensity: number
@@ -136,6 +139,44 @@ export function sceneLight(
   const bounceColor = new THREE.Color(light.flats).lerp(new THREE.Color(light.skyHorizon), 0.5)
   const bounceIntensity = (sunUp ? 0.25 + day * 0.5 : 0.06) * (1 - 0.3 * overcast)
 
+  /*
+   * What comes back up off the floor.
+   *
+   * There is no global illumination here, so until now the underside of
+   * everything in the building was lit by exactly one thing: the hemisphere
+   * light's ground term. On the roof — which faces down, and which nothing
+   * else reaches — that left the sheathing 1 stop under mid grey and the
+   * rafters 2.4 stops under.
+   *
+   * The visible symptom was colour, not darkness, and that is worth writing
+   * down because it sent me the wrong way twice. Measured off the render the
+   * rafters came back at 88% saturation, hue 9° — oxblood red — and the
+   * sheathing at 37%, mustard. Neither is a colour timber comes in. But the
+   * illuminant was not red and the albedo was not red: the ratios are being
+   * stretched by AgX's toe, which is a per-channel curve in log space, so two
+   * channels three stops down separate far further than they did going in.
+   * Underexposure looks like a colour cast, and correcting the colour cannot
+   * fix it. Neither could any amount of texturing, which is what I was asked
+   * for and what I spent the first hour assuming this was.
+   *
+   * So: a light pointing straight up. A directional light shines from its
+   * position toward the origin, so putting it below means only surfaces with
+   * a downward-facing normal see it — the roof underside, the soffits, the
+   * counter overhang, under the tables. Exactly the set a floor bounce lights,
+   * so this is cheap and it is also true.
+   *
+   * Nearly neutral, and that is deliberate rather than lazy. What reaches the
+   * underside of a barn roof is not one colour: it is sun off the boards, sky
+   * through the gaps in the sheathing, and daylight off the gable ends, mixed
+   * and bounced. Light that has been round a room a few times has lost most
+   * of its colour, and it is the mixing far more than the level that stops
+   * the ceiling reading as stained glass.
+   */
+  const floorBounce = new THREE.Color(light.flats)
+    .lerp(sunColor, 0.4)
+    .lerp(new THREE.Color('#cfcec9'), 0.72)
+  const floorBounceIntensity = (sunUp ? 0.6 + day * 1.0 : 0.07 + moon * 0.05) * (1 - 0.3 * overcast)
+
   const fogColor = new THREE.Color(light.haze).lerp(new THREE.Color('#9aa3ad'), overcast * 0.5)
 
   const backdropTint = new THREE.Color(light.peakLight)
@@ -170,6 +211,8 @@ export function sceneLight(
     ambientIntensity,
     bounceColor,
     bounceIntensity,
+    floorBounce,
+    floorBounceIntensity,
     fogColor,
     fogDensity: 0.0032 + overcast * 0.004,
     backdropTint,

@@ -319,6 +319,122 @@ export function useWallMacro() {
   }, [])
 }
 
+/**
+ * The roof, unfolded.
+ *
+ * A gable roof is two planes joined at the ridge, and the natural way to lay
+ * that on one map is to flatten it the way you would a cardboard box: the
+ * -X eave along the bottom edge, the ridge across the middle, the +X eave
+ * along the top. Both slopes then live on the same map and the two sides can
+ * differ, which matters because the stove's flue only comes out of one of
+ * them.
+ *
+ * What is on it:
+ *
+ * **Dust, thickening toward the ridge.** Nothing up there has ever been
+ * touched. It is the only surface in the building where the wear gets worse
+ * the further it is from anybody.
+ *
+ * **The smoke stain.** A hundred years of a wood stove leaves a dark cone on
+ * the boards around where the flue goes through, and it is not symmetrical:
+ * the plume leans up-slope, toward the ridge, because that is where the heat
+ * goes. This is the one mark on the whole roof that a visitor could point at
+ * and say what it is, which makes it worth more than the rest of the file.
+ *
+ * **Bleaching along the eaves.** The sheathing near the wall plate sees
+ * daylight through the gap under the eave all day. Weathered timber that gets
+ * light goes pale; timber in the dark goes brown.
+ */
+const ROOF = { z0: BARN.frontZ, d: BARN.backZ - BARN.frontZ }
+
+/** Where the flue passes through, on the unfolded map. */
+const FLUE = { x: -4.4, z: 4.2 }
+
+export function roofMacroMaps(): { tint: HTMLCanvasElement; rough: HTMLCanvasElement } {
+  const [tc, tint] = surface()
+  const [rc, rough] = surface()
+  const rand = seeded(90909)
+
+  tint.fillStyle = '#ffffff'
+  tint.fillRect(0, 0, S, S)
+  rough.fillStyle = 'rgb(128,128,128)'
+  rough.fillRect(0, 0, S, S)
+
+  /*
+   * V = 0 and V = 1 are the two eaves; V = 0.5 is the ridge. So the dust
+   * gradient is symmetric about the middle, and the eaves are the clean end.
+   */
+  const dust = tint.createLinearGradient(0, 0, 0, S)
+  dust.addColorStop(0, 'rgba(216,213,206,0.35)')
+  dust.addColorStop(0.5, 'rgba(172,169,163,0.62)')
+  dust.addColorStop(1, 'rgba(216,213,206,0.35)')
+  tint.fillStyle = dust
+  tint.fillRect(0, 0, S, S)
+
+  // Dust is matte, and there is no varnish under it anyway.
+  const dr = rough.createLinearGradient(0, 0, 0, S)
+  dr.addColorStop(0, 'rgba(180,180,180,0.45)')
+  dr.addColorStop(0.5, 'rgba(205,205,205,0.7)')
+  dr.addColorStop(1, 'rgba(180,180,180,0.45)')
+  rough.fillStyle = dr
+  rough.fillRect(0, 0, S, S)
+
+  // Bleaching in the last half metre before the eave, both sides.
+  for (const edge of [0, S]) {
+    const g = tint.createLinearGradient(0, edge, 0, edge === 0 ? S * 0.16 : S * 0.84)
+    g.addColorStop(0, 'rgba(255,252,244,0.4)')
+    g.addColorStop(1, 'rgba(255,252,244,0)')
+    tint.fillStyle = g
+    tint.fillRect(0, edge === 0 ? 0 : S * 0.84, S, S * 0.16)
+  }
+
+  // Broad drift, so no two bays look alike.
+  for (let i = 0; i < 30; i++) {
+    blot(
+      tint,
+      rand() * S,
+      rand() * S,
+      30 + rand() * 110,
+      rand() > 0.5 ? '150,142,128' : '255,250,240',
+      0.13,
+    )
+  }
+
+  /*
+   * The smoke. Drawn as a plume rather than a disc — a stack leaks upward
+   * along the slope, so the stain runs from the collar toward the ridge and
+   * fans as it goes.
+   */
+  const u = ((FLUE.z - ROOF.z0) / ROOF.d) * S
+  const t = (BARN.eaveY + (BARN.ridgeY - BARN.eaveY) * (1 - Math.abs(FLUE.x) / BARN.halfWidth) - BARN.eaveY) /
+    (BARN.ridgeY - BARN.eaveY)
+  // Negative x, so the -X half of the unfolded map: V below the ridge.
+  const v = (0.5 - 0.5 * (1 - t)) * S
+
+  blot(tint, u, v, 34, '46,38,30', 0.5)
+  for (let i = 0; i < 34; i++) {
+    const up = i / 34
+    blot(
+      tint,
+      u + (rand() - 0.5) * 34 * (0.4 + up),
+      v + up * 96,
+      22 + up * 52,
+      '58,48,38',
+      0.14 * (1 - up * 0.7),
+    )
+  }
+  blot(rough, u, v, 58, '190,190,190', 0.45)
+
+  return { tint: tc, rough: rc }
+}
+
+export function useRoofMacro() {
+  return useMemo(() => {
+    const m = roofMacroMaps()
+    return maps(m.tint, m.rough)
+  }, [])
+}
+
 function maps(tc: HTMLCanvasElement, rc: HTMLCanvasElement) {
   const tintMap = new THREE.CanvasTexture(tc)
   const roughMap = new THREE.CanvasTexture(rc)
@@ -346,6 +462,20 @@ function maps(tc: HTMLCanvasElement, rc: HTMLCanvasElement) {
 export const FLOOR_UV = `vec2(
   (position.x - ${FLOOR.x0.toFixed(2)}) / ${FLOOR.w.toFixed(2)},
   (position.z - ${FLOOR.z0.toFixed(2)}) / ${FLOOR.d.toFixed(2)}
+)`
+
+/**
+ * The unfolded roof: along the barn in U, and across both slopes in V.
+ *
+ * V walks from the -X eave at 0, up that slope to the ridge at 0.5, and back
+ * down the +X slope to its eave at 1. `sign(position.x)` is what separates
+ * the two halves, and it is the only reason the smoke stain lands on the one
+ * slope the flue actually comes out of.
+ */
+export const ROOF_UV = `vec2(
+  (position.z - ${BARN.frontZ.toFixed(2)}) / ${(BARN.backZ - BARN.frontZ).toFixed(2)},
+  0.5 + 0.5 * sign(position.x) * (1.0 - clamp(
+    (position.y - ${BARN.eaveY.toFixed(2)}) / ${(BARN.ridgeY - BARN.eaveY).toFixed(2)}, 0.0, 1.0))
 )`
 
 export const WALL_UV = `vec2(

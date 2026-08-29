@@ -88,7 +88,7 @@ function Lights({
       />
       <hemisphereLight
         color={light.ambientColor}
-        groundColor={light.bounceColor}
+        groundColor={light.floorBounce}
         intensity={light.ambientIntensity}
       />
       {/* Bounce off the sunlit valley floor, coming back in through the door. */}
@@ -96,6 +96,17 @@ function Lights({
         position={[0, 1.2, -22]}
         color={light.bounceColor}
         intensity={light.bounceIntensity}
+      />
+      {/*
+       * And bounce off the floorboards, going back up. Below the origin, so
+       * it shines upward and only downward-facing surfaces see it — the roof
+       * underside above all, which nothing else in the rig reached. See
+       * lighting.ts.
+       */}
+      <directionalLight
+        position={[0, -1, 0]}
+        color={light.floorBounce}
+        intensity={light.floorBounceIntensity}
       />
     </>
   )

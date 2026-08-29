@@ -3,7 +3,15 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 import { BARN } from '../scene/barn'
-import { FLOOR_UV, WALL_UV, useFloorMacro, useWallMacro, withMacro } from './macro'
+import {
+  FLOOR_UV,
+  ROOF_UV,
+  WALL_UV,
+  useFloorMacro,
+  useRoofMacro,
+  useWallMacro,
+  withMacro,
+} from './macro'
 
 /**
  * The barn.
@@ -277,33 +285,42 @@ function useBarnGeometry() {
       plate.translate(px, eaveY, (frontZ + backZ) / 2)
       frameParts.push(plate)
     }
-    // Rafter pairs.
+    /*
+     * Rafters, collar ties and the ridge beam are kept apart from the posts
+     * and plates below them. Same timber, different life: everything above
+     * the eaves has had a century of dust settle on it and has never once
+     * been touched, wiped or rained on, and it wants a duller, greyer surface
+     * than the frame you can put your hand on.
+     */
+    const roofParts: THREE.BufferGeometry[] = []
     for (let z = frontZ + 0.4; z < backZ; z += 1.0) {
       for (const side of [-1, 1]) {
         const r = board(0.14, slopeLen, 0.18, 4)
         r.rotateZ(side * (Math.PI / 2 - pitch))
         r.translate((side * HW) / 2, (eaveY + ridgeY) / 2 - 0.12, z)
-        frameParts.push(r)
+        roofParts.push(r)
       }
       const tie = board(0.13, HW * 0.9, 0.16, 6)
       tie.rotateZ(Math.PI / 2)
       tie.translate(0, eaveY + 1.0, z)
-      frameParts.push(tie)
+      roofParts.push(tie)
     }
     const ridge = board(0.2, backZ - frontZ, 0.24, 1)
     ridge.rotateX(Math.PI / 2)
     ridge.translate(0, ridgeY - 0.12, (frontZ + backZ) / 2)
-    frameParts.push(ridge)
+    roofParts.push(ridge)
 
     const frame = mergeGeometries(frameParts, false)
     frameParts.forEach((g) => g.dispose())
+    const rafters = mergeGeometries(roofParts, false)
+    roofParts.forEach((g) => g.dispose())
 
-    return { walls, roof, floor, frame }
+    return { walls, roof, floor, frame, rafters }
   }, [])
 }
 
 export function Barn() {
-  const { walls, roof, floor, frame } = useBarnGeometry()
+  const { walls, roof, floor, frame, rafters } = useBarnGeometry()
   const maps = useWoodMaps(GRAIN.siding)
   const floorMaps = useWoodMaps(GRAIN.floor)
 
@@ -322,6 +339,23 @@ export function Barn() {
     side: THREE.DoubleSide,
   })
   const timberBase = useWoodMaterial(maps, { tint: '#c4a882', roughness: 0.95, normalScale: 1.1 })
+  /*
+   * Everything above the eaves, in dust.
+   *
+   * The tint is the point and it is doing real work, not decoration. Warm
+   * timber lit by warm bounce and nothing else came out at 88% saturation —
+   * the rafters were oxblood and the sheathing mustard, a stained-glass
+   * ceiling. Dust is grey, it sits on top of the wood, and pulling the albedo
+   * toward neutral is the one lever that actually reduces the saturation,
+   * because a coloured light on a coloured surface multiplies both.
+   */
+  const dustyBase = useWoodMaterial(maps, { tint: '#bdb6a9', roughness: 1, normalScale: 0.9 })
+  const roofBase = useWoodMaterial(maps, {
+    tint: '#d8d1c3',
+    roughness: 1,
+    normalScale: 1.15,
+    side: THREE.DoubleSide,
+  })
   const floorBase = useWoodMaterial(floorMaps, {
     tint: '#8a6d4b',
     roughness: 0.72,
@@ -348,13 +382,23 @@ export function Barn() {
     () => withMacro(floorBase, ground, FLOOR_UV, 'macro-floor'),
     [floorBase, ground],
   )
+  const above = useRoofMacro()
+  const roofMat = useMemo(
+    () => withMacro(roofBase, above, ROOF_UV, 'macro-roof'),
+    [roofBase, above],
+  )
+  const rafterMat = useMemo(
+    () => withMacro(dustyBase, above, ROOF_UV, 'macro-roof'),
+    [dustyBase, above],
+  )
 
   return (
     <group>
       {walls && <mesh geometry={walls} material={siding} castShadow receiveShadow />}
-      {roof && <mesh geometry={roof} material={siding} castShadow receiveShadow />}
+      {roof && <mesh geometry={roof} material={roofMat} castShadow receiveShadow />}
       <mesh geometry={floor} material={floorMat} receiveShadow />
       <mesh geometry={frame} material={timber} castShadow receiveShadow />
+      <mesh geometry={rafters} material={rafterMat} castShadow receiveShadow />
     </group>
   )
 }
