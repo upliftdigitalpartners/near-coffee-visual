@@ -9,6 +9,7 @@ import type { Solar, Weather } from '../scene/place'
 import { sceneLight } from './lighting'
 import { Barn, BARN } from './Barn'
 import { Backdrop } from './Backdrop'
+import { Trees } from './Trees'
 import { Fixtures } from './Fixtures'
 import { CameraRig } from './CameraRig'
 import { NapkinWall } from './NapkinWall'
@@ -264,6 +265,7 @@ export function Scene({
 
       <Suspense fallback={null}>
         <Backdrop light={light} />
+        <Trees />
       </Suspense>
 
       <Snow amount={light.snow} />

@@ -62,6 +62,7 @@ there is no file to license and no provenance to check.
 | The painted porch sign | `src/wall/sign.ts` |
 | Glazed stoneware for the cups and crockery | `src/three/surfaces.ts` |
 | Crusted snow, its drifts, wind ripple and bare patches | `src/three/Backdrop.tsx` |
+| The conifers in the middle ground, and their needles | `src/three/Trees.tsx` |
 | Where the snow is still deep, across the whole valley | `src/three/Backdrop.tsx` |
 | The chalkboard, and the day's bake written on it | `src/wall/bake.ts` |
 | Pinned napkins | `src/wall/napkins.ts` |

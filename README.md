@@ -88,6 +88,7 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | --- | --- |
 | `src/three/Barn.tsx` | The structure — siding, roof, floor, frame |
 | `src/three/Backdrop.tsx` | The photographed range, and the ground under it |
+| `src/three/Trees.tsx` | The conifer stand between you and the plate |
 | `src/three/Fixtures.tsx` | Counter, shelves, bulbs, and what is on them |
 | `src/three/Bakery.tsx` | The room through the back wall, and its oven |
 | `src/three/Porch.tsx` | Deck, posts, shed roof, bench and sign |
