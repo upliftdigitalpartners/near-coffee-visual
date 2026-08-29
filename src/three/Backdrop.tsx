@@ -110,7 +110,7 @@ const GROUND_GONE_BY = 54
  * gives the eye something to land on, and matches what is happening in the
  * lower third of the photograph it has to sit against.
  */
-function snowTexture(): THREE.CanvasTexture {
+export function snowCanvas(): HTMLCanvasElement {
   const S = 1024
   const c = document.createElement('canvas')
   c.width = c.height = S
@@ -121,48 +121,208 @@ function snowTexture(): THREE.CanvasTexture {
     seed = (seed * 1664525 + 1013904223) >>> 0
     return seed / 4294967296
   }
+  /** Draw something nine times, so nothing is cut off at the tile's edge. */
+  const wrapped = (draw: (ox: number, oy: number) => void) => {
+    for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) draw(ox, oy)
+  }
 
-  ctx.fillStyle = '#e4e9ee'
+  ctx.fillStyle = '#e6ebef'
   ctx.fillRect(0, 0, S, S)
 
-  // Soft drifts and hollows.
-  for (let i = 0; i < 220; i++) {
+  /*
+   * Drifts, with enough contrast to actually be drifts.
+   *
+   * The previous pass ran these at 0.16 alpha, which on a white field is
+   * nothing, so the snow was flat white with dots on it and the dots had to
+   * carry the whole surface by themselves.
+   */
+  for (let i = 0; i < 160; i++) {
     const x = rand() * S
     const y = rand() * S
-    const r = 30 + rand() * 190
+    const r = 60 + rand() * 260
+    wrapped((ox, oy) => {
+      const g = ctx.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r)
+      const dark = rand() > 0.5
+      g.addColorStop(0, dark ? 'rgba(158,172,188,0.3)' : 'rgba(255,255,255,0.42)')
+      g.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2)
+      ctx.fill()
+    })
+  }
+
+  /*
+   * Wind ripple. Snow that has been blown is combed: long shallow ridges all
+   * running the same way, because the wind in a valley runs the same way for
+   * weeks. Nothing else in this texture has a direction, and a surface with
+   * no direction reads as a material sample rather than as a place.
+   */
+  ctx.lineCap = 'round'
+  for (let i = 0; i < 340; i++) {
+    const x = rand() * S
+    const y = rand() * S
+    const len = 60 + rand() * 300
+    const drift = (rand() - 0.5) * 40
+    const pale = rand() > 0.5
+    wrapped((ox, oy) => {
+      ctx.strokeStyle = pale
+        ? `rgba(255,255,255,${0.1 + rand() * 0.16})`
+        : `rgba(168,180,194,${0.05 + rand() * 0.1})`
+      ctx.lineWidth = 2 + rand() * 9
+      ctx.beginPath()
+      ctx.moveTo(x + ox, y + oy)
+      ctx.quadraticCurveTo(x + ox + len * 0.5, y + oy + drift, x + ox + len, y + oy + drift * 0.4)
+      ctx.stroke()
+    })
+  }
+
+  /*
+   * Ground breaking through, as patches rather than as spots.
+   *
+   * This is the whole fix. The old version stamped 420 separate ellipses of
+   * roughly one size, evenly scattered, and the result was confetti — it read
+   * as paper dots on white from anywhere on the porch, and once seen it could
+   * not be unseen.
+   *
+   * Snow does not retreat in circles. It thins first over whatever stands
+   * proudest, and the bare ground appears as ragged connected patches that
+   * grow fingers into the drifts. Each patch here is a short random walk with
+   * overlapping ellipses of varying size stamped along it, so the outline is
+   * irregular and the patches join up. A dozen of those, at wildly different
+   * sizes, instead of hundreds of identical dots.
+   */
+  const patch = (cx: number, cy: number, scale: number) => {
+    let x = cx
+    let y = cy
+    let a = rand() * Math.PI * 2
+    const steps = 8 + Math.floor(rand() * 18)
+    for (let k = 0; k < steps; k++) {
+      a += (rand() - 0.5) * 1.5
+      x += Math.cos(a) * scale * 0.5
+      y += Math.sin(a) * scale * 0.35
+      const r = scale * (0.35 + rand() * 0.75)
+      // Sage and wet earth, well desaturated: this is ground under snow-glare,
+      // and the old olive read as moss.
+      const v = 104 + rand() * 34
+      wrapped((ox, oy) => {
+        /*
+         * A hard core with a short soft edge, not a long ramp. Stamped as a
+         * broad gradient the patches came out as grey smudges that read as
+         * cloud shadow crossing the field; ground has an edge, even a ragged
+         * one, and it is the edge that says a hole in the snow rather than a
+         * shadow on it. Warmer, too — bare earth against snow is brown, and
+         * neutral grey is what a shadow is.
+         */
+        const g = ctx.createRadialGradient(x + ox, y + oy, r * 0.62, x + ox, y + oy, r)
+        g.addColorStop(0, `rgba(${v},${v - 12},${v - 26},${0.62 + rand() * 0.3})`)
+        g.addColorStop(0.55, `rgba(${v + 12},${v - 2},${v - 18},0.42)`)
+        g.addColorStop(1, 'rgba(214,208,196,0)')
+        ctx.fillStyle = g
+        ctx.beginPath()
+        ctx.ellipse(x + ox, y + oy, r, r * (0.5 + rand() * 0.55), a, 0, Math.PI * 2)
+        ctx.fill()
+      })
+    }
+  }
+  for (let i = 0; i < 18; i++) patch(rand() * S, rand() * S, 8 + rand() * 54)
+
+  // Sage, standing in the clear patches. Dark, small, and clumped.
+  for (let i = 0; i < 70; i++) {
+    const cx = rand() * S
+    const cy = rand() * S
+    wrapped((ox, oy) => {
+      for (let k = 0; k < 5; k++) {
+        const r = 2 + rand() * 5
+        ctx.fillStyle = `rgba(${64 + rand() * 26},${60 + rand() * 22},${48 + rand() * 18},${0.2 + rand() * 0.3})`
+        ctx.beginPath()
+        ctx.ellipse(
+          cx + ox + (rand() - 0.5) * 20,
+          cy + oy + (rand() - 0.5) * 16,
+          r,
+          r * (0.4 + rand() * 0.5),
+          rand() * Math.PI,
+          0,
+          Math.PI * 2,
+        )
+        ctx.fill()
+      }
+    })
+  }
+
+  // Fine crust grain, so it never reads as a flat fill up close.
+  for (let i = 0; i < 6200; i++) {
+    const v = rand()
+    ctx.fillStyle = v > 0.5 ? `rgba(255,255,255,${rand() * 0.3})` : `rgba(150,162,176,${rand() * 0.2})`
+    ctx.fillRect(rand() * S, rand() * S, 1 + rand() * 2, 1 + rand() * 2)
+  }
+
+  return c
+}
+
+/**
+ * How much snow is left, over the whole valley floor at once.
+ *
+ * The detail texture tiles every few metres, and any patch of bare ground
+ * distinctive enough to be worth drawing is distinctive enough to be caught
+ * repeating thirty times across the field. So the tile carries the detail and
+ * this carries the *story*: where the snow is still deep and unbroken, and
+ * where it has melted out. Sampled from world position, never tiled.
+ *
+ * It is thin nearest the barn on purpose. That is where the roof sheds, where
+ * the porch drips, and where everyone who has come in this winter has walked.
+ */
+export function snowCoverCanvas(): HTMLCanvasElement {
+  const S = 512
+  const c = document.createElement('canvas')
+  c.width = c.height = S
+  const ctx = c.getContext('2d')!
+
+  let seed = 8191
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    return seed / 4294967296
+  }
+
+  // White is deep snow; black is bare ground showing through.
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, S, S)
+
+  for (let i = 0; i < 90; i++) {
+    const x = rand() * S
+    const y = rand() * S
+    const r = S * (0.03 + rand() * 0.16)
     const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-    const dark = rand() > 0.5
-    g.addColorStop(0, dark ? 'rgba(150,164,180,0.16)' : 'rgba(255,255,255,0.2)')
-    g.addColorStop(1, 'rgba(255,255,255,0)')
+    g.addColorStop(0, `rgba(0,0,0,${0.3 + rand() * 0.55})`)
+    g.addColorStop(1, 'rgba(0,0,0,0)')
     ctx.fillStyle = g
     ctx.beginPath()
     ctx.arc(x, y, r, 0, Math.PI * 2)
     ctx.fill()
   }
 
-  // Sage and bare ground pushing through the crust. Small and low-contrast:
-  // bigger or bolder and the field reads as puddles rather than snow.
-  for (let i = 0; i < 420; i++) {
-    const x = rand() * S
-    const y = rand() * S
-    const r = 2 + rand() * 9
-    ctx.fillStyle = `rgba(${78 + rand() * 44},${70 + rand() * 38},${50 + rand() * 30},${0.12 + rand() * 0.3})`
-    ctx.beginPath()
-    ctx.ellipse(x, y, r, r * (0.4 + rand() * 0.5), rand() * Math.PI, 0, Math.PI * 2)
-    ctx.fill()
-  }
+  // The trodden apron in front of the building.
+  const near = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S * 0.1)
+  near.addColorStop(0, 'rgba(0,0,0,0.8)')
+  near.addColorStop(1, 'rgba(0,0,0,0)')
+  ctx.fillStyle = near
+  ctx.fillRect(0, 0, S, S)
 
-  // Fine crust grain, so it never reads as a flat fill up close.
-  for (let i = 0; i < 5200; i++) {
-    const v = rand()
-    ctx.fillStyle = v > 0.5 ? `rgba(255,255,255,${rand() * 0.3})` : `rgba(146,158,172,${rand() * 0.22})`
-    ctx.fillRect(rand() * S, rand() * S, 1 + rand() * 2, 1 + rand() * 2)
-  }
+  return c
+}
 
-  const t = new THREE.CanvasTexture(c)
+function snowTexture(): THREE.CanvasTexture {
+  const t = new THREE.CanvasTexture(snowCanvas())
   t.colorSpace = THREE.SRGBColorSpace
   t.wrapS = t.wrapT = THREE.RepeatWrapping
-  t.repeat.set(110, 110)
+  /*
+   * 34, not 110. One tile is 3.6m across the 124m disc — coarse enough that a
+   * patch of bare ground can be a metre wide, which is the size they come in,
+   * and still 3.6mm per texel. At 110 the tile was 1.1m and nothing bigger
+   * than a dinner plate would fit in it, which is a large part of why the
+   * ground came out as dots.
+   */
+  t.repeat.set(34, 34)
   t.anisotropy = 8
   return t
 }
@@ -251,6 +411,9 @@ export function Backdrop({ light }: { light: SceneLight }) {
    * meaningless as a radius.
    */
   const groundMat = useMemo(() => {
+    const cover = new THREE.CanvasTexture(snowCoverCanvas())
+    cover.colorSpace = THREE.NoColorSpace
+    cover.wrapS = cover.wrapT = THREE.ClampToEdgeWrapping
     const m = new THREE.MeshBasicMaterial({
       map: ground,
       color: SNOW,
@@ -266,6 +429,7 @@ export function Backdrop({ light }: { light: SceneLight }) {
     })
     m.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, grade.current)
+      shader.uniforms.uCover = { value: cover }
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
         .replace(
@@ -278,11 +442,20 @@ export function Backdrop({ light }: { light: SceneLight }) {
           '#include <common>',
           `#include <common>
            varying vec2 vGroundXZ;
+           uniform sampler2D uCover;
            ${GRADE_UNIFORMS}`,
         )
         .replace(
           '#include <map_fragment>',
           `#include <map_fragment>
+           /*
+            * How much snow is left here, from world position rather than from
+            * the tiled UV. Where the cover is deep the detail texture is
+            * washed out to clean snow, so the same few patches of bare ground
+            * do not turn up thirty-four times across the valley in a grid.
+            */
+           float cover = texture2D( uCover, vGroundXZ / ${(RADIUS * 2).toFixed(1)} + 0.5 ).r;
+           diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.94, 0.96, 0.98 ), cover * 0.86 );
            ${GRADE_BODY}
            diffuseColor.a *= 1.0 - smoothstep(${GROUND_SOLID_TO.toFixed(1)}, ${GROUND_GONE_BY.toFixed(1)}, length(vGroundXZ));`,
         )

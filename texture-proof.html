@@ -18,6 +18,7 @@
 <script type="module">
 import { tableTopMaps } from '/src/three/tabletop.ts'
 import { floorMacroMaps, roofMacroMaps, wallMacroMaps } from '/src/three/macro.ts'
+import { snowCanvas } from '/src/three/Backdrop.tsx'
 const load = (u) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = u })
 const [m, ro, n] = await Promise.all([
   load('/textures/planks/diff_1k.jpg'),
@@ -26,7 +27,9 @@ const [m, ro, n] = await Promise.all([
 ])
 const [a, r, nm] = tableTopMaps({ map: m, roughnessMap: ro, normalMap: n }, 3, 0.62, 1024)
 const show = (list, w) => { for (const c of list) { c.style.width = w; c.style.imageRendering = 'pixelated'; document.body.append(c) } }
-if (location.hash === '#macro') {
+if (location.hash === '#snow') {
+  show([snowCanvas()], '620px')
+} else if (location.hash === '#macro') {
   const f = floorMacroMaps(), wl = wallMacroMaps(), rf = roofMacroMaps()
   show([f.tint, f.rough, wl.tint, wl.rough, rf.tint, rf.rough], '320px')
 } else {
