@@ -99,6 +99,7 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | `src/three/Grinder.tsx` | The doser grinder, and its shake |
 | `src/three/tabletop.ts` | A worn top per table — boards, polish, cup rings |
 | `src/three/macro.ts` | Where people walk, how far the grime climbs, what the stove stained |
+| `src/three/coats.ts` | Limewash and silvering — timber with something on it |
 | `texture-proof.html` | Dev page: the generated maps, unlit, at real size |
 | `src/scene/barn.ts` | The building's dimensions, on their own |
 | `src/scene/zones.ts` | Where you are allowed to stand |

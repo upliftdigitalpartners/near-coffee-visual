@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { BARN } from './Barn'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
+import { useSilvered } from './coats'
 import { signTexture } from '../wall/sign'
 
 /**
@@ -74,15 +75,31 @@ function usePorchGeometry() {
     let z = P.z1
     let n = 0
     while (z < P.z0) {
+    /*
+     * Built with the length along Y and then turned down, which looks like a
+     * detour and is not. `plankUVs` maps a board's length along the texture's
+     * U and squeezes its width into one plank band in V, and it reads those
+     * two directions off the box's own UVs — where V runs along Y. Build a
+     * board lying along X and hand it its length anyway, and the mapping comes
+     * out transposed: metres of board crushed into a tenth of the texture, and
+     * a few centimetres of width stretched over five repeats of it.
+     *
+     * The result is a surface with no grain at all, which is exactly what the
+     * porch deck and this ceiling have been. The porch posts were the only
+     * timber out there built the correct way up, and the only timber out there
+     * that had any figure in it — which is the clue, in hindsight.
+     */
       const w = 0.17
-      const g = plankUVs(chamferedBox(P.x1 - P.x0, 0.06, w), P.x1 - P.x0, n * 31 + 21)
+      const g = plankUVs(chamferedBox(0.06, P.x1 - P.x0, w), P.x1 - P.x0, n * 31 + 21)
+      g.rotateZ(Math.PI / 2)
       g.translate((P.x0 + P.x1) / 2, P.deckY, z + w / 2)
       deckParts.push(g)
       z += w + 0.009
       n++
     }
     /* Edge beam, so the deck has a thickness rather than a paper edge. */
-    const edge = plankUVs(chamferedBox(P.x1 - P.x0, 0.22, 0.12), P.x1 - P.x0, 77)
+    const edge = plankUVs(chamferedBox(0.22, P.x1 - P.x0, 0.12), P.x1 - P.x0, 77)
+    edge.rotateZ(Math.PI / 2)
     edge.translate((P.x0 + P.x1) / 2, P.deckY - 0.11, P.z1 + 0.06)
     deckParts.push(edge)
     const deck = mergeGeometries(deckParts, false)
@@ -96,7 +113,8 @@ function usePorchGeometry() {
       g.translate(x, P.deckY + h / 2, P.z1 + 0.16)
       frameParts.push(g)
     }
-    const beam = plankUVs(chamferedBox(P.x1 - P.x0, 0.2, 0.16), P.x1 - P.x0, 5)
+    const beam = plankUVs(chamferedBox(0.2, P.x1 - P.x0, 0.16), P.x1 - P.x0, 5)
+    beam.rotateZ(Math.PI / 2)
     beam.translate((P.x0 + P.x1) / 2, P.roofEdge - 0.1, P.z1 + 0.16)
     frameParts.push(beam)
     const frame = mergeGeometries(frameParts, false)
@@ -118,7 +136,8 @@ function usePorchGeometry() {
     let rn = 0
     while (x < P.x1) {
       const w = 0.26
-      const g = plankUVs(chamferedBox(w, 0.05, slope + 0.24), slope, rn * 31 + 13)
+      const g = plankUVs(chamferedBox(w, slope + 0.24, 0.05), slope, rn * 31 + 13)
+      g.rotateX(Math.PI / 2)
       g.rotateX(-pitch)
       g.translate(x + w / 2, (P.roofWall + P.roofEdge) / 2, (P.z0 + P.z1) / 2 - 0.1)
       roofParts.push(g)
@@ -165,21 +184,27 @@ function Sign() {
 
 export function Porch() {
   const { deck, frame, roof } = usePorchGeometry()
-  const maps = useWoodMaps(GRAIN.siding)
   const furniture = useWoodMaps(GRAIN.furniture)
 
   /*
-   * Greyer than the barn's inside. This timber has had a century of weather on
-   * it with no roof over most of it, and decking silvers faster than siding
-   * because it takes the rain flat.
+   * Silvered, and genuinely so rather than tinted so.
+   *
+   * This carried `tint: '#b9b3a8'` and a comment about a century of weather,
+   * and rendered near-black — darker at midday than the floor inside the
+   * building, with the whole valley of snow bouncing light onto it. A tint
+   * multiplies the albedo map and multiplication cannot lighten; the source
+   * set is dark timber, so no tint was ever going to get there. See coats.ts:
+   * the pale is composited into the albedo, which is also what actually
+   * happens to a board left outside for a hundred years.
    */
-  const boards = useWoodMaterial(maps, {
-    tint: '#b9b3a8',
-    roughness: 1,
-    normalScale: 1.3,
-    side: THREE.DoubleSide,
-  })
-  const timber = useWoodMaterial(maps, { tint: '#9c9384', roughness: 0.97, normalScale: 1.1 })
+  const boards = useSilvered(GRAIN.siding)
+  /*
+   * The posts weather too — less than the deck, because they shed rain rather
+   * than hold it, and because half of each one is under the roof. Left on the
+   * barn's timber they were dark brown against a silver deck, which is two
+   * different buildings.
+   */
+  const timber = useSilvered(GRAIN.siding, 0.3)
   const seat = useWoodMaterial(furniture, { tint: '#a89478', roughness: 0.8 })
 
   return (

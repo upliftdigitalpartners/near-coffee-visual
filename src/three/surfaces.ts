@@ -554,3 +554,157 @@ export function useEnamel(tint = '#2b2825', dust = 1) {
     })
   }, [tint, dust])
 }
+
+/**
+ * Firebrick, in courses.
+ *
+ * The oven was wearing the counter's soapstone at a brown tint, on the theory
+ * that firebrick and soapstone are the same problem — a dense, matte, unevenly
+ * worn stone, differing only in colour. That was wrong, and the render says so
+ * plainly: soapstone's veining is long pale streaks, and at oven scale they
+ * came out as a craze of fine cracks over a two-metre slab. It read as tooled
+ * leather.
+ *
+ * What makes brick read as brick is not its colour or its mottling. It is
+ * **courses**. A repeating grid of units with recessed joints, offset by half
+ * a unit each row, is the entire signal, and it is legible at any distance
+ * down to a silhouette. No amount of surface noise substitutes for it.
+ *
+ * Firebrick is also not red. A bread oven is lined and faced with refractory
+ * brick, which is a pale buff-cream, and it is the soot that darkens it.
+ */
+const BRICKS_ACROSS = 5
+const COURSES = 14
+/** Firebrick, sorted pale to dark. Real ones vary batch to batch. */
+const FIREBRICK = ['#a8906a', '#9b8460', '#8e7757', '#ae9a75', '#847053', '#9d8965']
+
+export function useFirebrick(soot = 1) {
+  return useMemo(() => {
+    const [ac, actx] = canvas(SIZE)
+    // Height is drawn separately, because a dark brick is not a low one: the
+    // normal has to come off the joints, not off the colour variation.
+    const [hc, hctx] = canvas(SIZE)
+    const rand = seeded(4242)
+
+    const bw = SIZE / BRICKS_ACROSS
+    const bh = SIZE / COURSES
+    // 10mm of mortar on a 230mm brick. The first pass ran twice this and
+    // the oven came back as tiled grout.
+    const joint = SIZE * 0.0045
+
+    actx.fillStyle = '#6f675b'
+    actx.fillRect(0, 0, SIZE, SIZE)
+    hctx.fillStyle = '#4a4a4a'
+    hctx.fillRect(0, 0, SIZE, SIZE)
+
+    for (let row = 0; row < COURSES; row++) {
+      const y = row * bh
+      // Half-bond. Drawn from -1 so the brick straddling the left edge is
+      // there too, and the map tiles without a seam down it.
+      const shift = row % 2 === 0 ? 0 : bw / 2
+      for (let col = -1; col < BRICKS_ACROSS + 1; col++) {
+        const x = col * bw + shift
+        const face = FIREBRICK[Math.floor(rand() * FIREBRICK.length)]
+        actx.fillStyle = face
+        actx.fillRect(x + joint, y + joint, bw - joint * 2, bh - joint * 2)
+        hctx.fillStyle = `rgb(${190 + Math.floor(rand() * 40)},190,190)`
+        hctx.fillRect(x + joint, y + joint, bw - joint * 2, bh - joint * 2)
+
+        // Every brick a little different across its own face, or five colours
+        // in a grid read as tiles.
+        for (let i = 0; i < 5; i++) {
+          const g = actx.createRadialGradient(
+            x + rand() * bw, y + rand() * bh, 0,
+            x + rand() * bw, y + rand() * bh, 20 + rand() * 60,
+          )
+          const dark = rand() > 0.5
+          g.addColorStop(0, dark ? 'rgba(120,104,80,0.16)' : 'rgba(255,248,228,0.16)')
+          g.addColorStop(1, 'rgba(0,0,0,0)')
+          actx.save()
+          actx.beginPath()
+          actx.rect(x + joint, y + joint, bw - joint * 2, bh - joint * 2)
+          actx.clip()
+          actx.fillStyle = g
+          actx.fillRect(x, y, bw, bh)
+          actx.restore()
+        }
+
+        // A chipped corner here and there, down to the darker body.
+        if (rand() > 0.86) {
+          const cx = x + (rand() > 0.5 ? joint : bw - joint)
+          const cy = y + (rand() > 0.5 ? joint : bh - joint)
+          const r = 4 + rand() * 12
+          actx.fillStyle = 'rgba(150,132,104,0.75)'
+          actx.beginPath()
+          actx.arc(cx, cy, r, 0, Math.PI * 2)
+          actx.fill()
+          hctx.fillStyle = 'rgba(90,90,90,0.8)'
+          hctx.beginPath()
+          hctx.arc(cx, cy, r, 0, Math.PI * 2)
+          hctx.fill()
+        }
+      }
+    }
+
+    /*
+     * Soot, and far more of it than looked right on the canvas.
+     *
+     * Held at the level that reads correctly on the map it vanished entirely
+     * in the room: the bakery is lit through a north window and the oven face
+     * takes that light flat, so the brick came back as clean new sandstone
+     * blocks. An oven lit every morning for a century is nearer brown than
+     * buff, and a map has to be laid on hard enough to survive the exposure it
+     * will actually be seen at.
+     */
+    for (let i = 0; i < Math.round(260 * soot); i++) {
+      const x = rand() * SIZE
+      const y = rand() * SIZE
+      const r = 14 + rand() * 110
+      const g = actx.createRadialGradient(x, y, 0, x, y, r)
+      g.addColorStop(0, `rgba(22,17,13,${0.1 + rand() * 0.3})`)
+      g.addColorStop(1, 'rgba(22,17,13,0)')
+      actx.fillStyle = g
+      actx.beginPath()
+      actx.arc(x, y, r, 0, Math.PI * 2)
+      actx.fill()
+    }
+
+    const map = new THREE.CanvasTexture(ac)
+    map.colorSpace = THREE.SRGBColorSpace
+    /*
+     * A very gentle normal, and this took three passes to accept.
+     *
+     * A hard step from mortar to brick in the height field puts a big Sobel
+     * gradient right at the joint, which lights up as a bevel round every
+     * unit — and a chamfered edge is a ceramic detail. It read as glazed
+     * subway tile at 2.6 and still did at 1.1. Recessed joints are real and
+     * should catch light; the fix was narrowing them and dropping the
+     * amplitude until what is left reads as a shadow line rather than a
+     * moulded edge.
+     */
+    const h = heights(hc, DERIVE)
+    const normalMap = normalFrom(h, DERIVE, 0.65)
+    const roughnessMap = roughnessFrom(h, DERIVE, 0.72, 0.97)
+    for (const t of [map, normalMap, roughnessMap]) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping
+      /*
+       * Uneven, because a box's UVs are 0..1 per face whatever its size — so
+       * repeat is counted in faces, not metres, and the oven's front is 1.5
+       * wide by 1.7 tall. These land 6.5 bricks across it and 22 courses up:
+       * a 230mm brick on a 76mm course, which is a brick.
+       */
+      t.repeat.set(1.3, 1.6)
+      t.anisotropy = 8
+    }
+
+    return new THREE.MeshStandardMaterial({
+      map,
+      normalMap,
+      roughnessMap,
+      roughness: 1,
+      metalness: 0,
+      normalScale: new THREE.Vector2(0.3, 0.3),
+      envMapIntensity: 0.4,
+    })
+  }, [soot])
+}

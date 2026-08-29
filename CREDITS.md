@@ -56,6 +56,9 @@ there is no file to license and no provenance to check.
 | Powder-coated enamel, chipped and dusted with grounds | `src/three/surfaces.ts` |
 | Walked paths, threshold grit and the grime up the walls | `src/three/macro.ts` |
 | Roof dust, eave bleaching and the stove's smoke stain | `src/three/macro.ts` |
+| Firebrick in courses, sooted | `src/three/surfaces.ts` |
+| Limewash for the bakery, silvering for the porch | `src/three/coats.ts` |
+| The bed of coals behind the oven door | `src/three/Bakery.tsx` |
 | The painted porch sign | `src/wall/sign.ts` |
 | Glazed stoneware for the cups and crockery | `src/three/surfaces.ts` |
 | Crusted snow for the valley floor | `src/three/Backdrop.tsx` |
