@@ -32,12 +32,12 @@ export type Zone = Rect & { floorY: number; name: string }
 /**
  * Walkable floor.
  *
- * The main room deliberately stops at x = 3.4, short of the counter at 3.6.
+ * The café floor deliberately stops at x = 3.4, short of the counter at 3.6.
  * Customers do not go behind the counter, and making the service side
  * unreachable is both truer and cheaper than modelling its back.
  */
 export const ZONES: Zone[] = [
-  { name: 'room', x0: -5.5, x1: 3.4, z0: -3.5, z1: 5.5, floorY: 0 },
+  { name: 'cafe', x0: -5.5, x1: 3.4, z0: -3.5, z1: 5.5, floorY: 0 },
   { name: 'doorway', x0: -1.65, x1: 1.65, z0: -4.5, z1: -3.5, floorY: 0 },
   { name: 'porch', x0: -3.3, x1: 3.3, z0: -7.05, z1: -4.5, floorY: 0.08 },
   /* The gap in the back wall, and the bakery behind it. */

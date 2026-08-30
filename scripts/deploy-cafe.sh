@@ -38,7 +38,7 @@ if git diff --quiet HEAD -- . && [ -z "$(git status --porcelain)" ]; then
 fi
 
 git add -A
-git commit -q -m "Update the Near Coffee room
+git commit -q -m "Update the Near Coffee café
 
 Source: github.com/upliftdigitalpartners/near-coffee-visual@$(git -C "$OLDPWD" rev-parse --short HEAD 2>/dev/null || echo local)"
 git push -q origin main
