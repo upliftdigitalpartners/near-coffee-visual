@@ -93,3 +93,20 @@ export function standInNapkins(): { id: string; text: string; at: number }[] | n
     at: now - (i / Math.max(1, n)) * 6.2 * 86400_000,
   }))
 }
+
+/**
+ * Skip the arrival screen.
+ *
+ * Added because it immediately got in the way of the thing that keeps this
+ * project honest. Every surface in the building has been judged from a
+ * headless render, and the arrival screen covers the frame until the scene
+ * reports ready — which under a software rasteriser can take most of a
+ * minute, and sometimes longer than the screenshot timeout. A shot of the
+ * loading screen is not a shot of the stove.
+ *
+ * `?ready=1` mounts the scene with the overlay already dismissed.
+ */
+export function skipArrival(): boolean {
+  const v = params()?.get('ready')
+  return v === '1' || v === 'true'
+}

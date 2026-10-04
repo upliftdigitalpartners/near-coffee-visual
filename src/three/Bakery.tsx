@@ -7,6 +7,7 @@ import { BARN } from './Barn'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 import type { SceneLight } from './lighting'
 import { useCastIron, useFirebrick } from './surfaces'
+import { useFire } from './fire'
 import { useLimewash } from './coats'
 
 /**
@@ -196,67 +197,10 @@ function useBakeryShell() {
  * everything nearby rather than its own brightness. Turning it down is what
  * made it read as fire rather than as a screen.
  */
-/**
- * What is actually behind the door.
- *
- * The glow was one flat emissive colour across the whole opening, which is a
- * lit rectangle — the shape of a screen, not of a fire. A wood oven's mouth is
- * brightest along the floor where the coals are, falls off into the arch, and
- * is darkest at the top corners where the brick throat is in shadow. Two
- * gradients and a few hot spots, and it stops being a light and starts being
- * a fire seen through a hole.
- */
-function useFireMap() {
-  return useMemo(() => {
-    const c = document.createElement('canvas')
-    c.width = 128
-    c.height = 64
-    const ctx = c.getContext('2d')!
-    ctx.fillStyle = '#160804'
-    ctx.fillRect(0, 0, 128, 64)
-
-    // The bed of coals, along the floor of the chamber.
-    const bed = ctx.createLinearGradient(0, 64, 0, 8)
-    bed.addColorStop(0, 'rgba(255,236,190,1)')
-    bed.addColorStop(0.22, 'rgba(255,150,60,0.95)')
-    bed.addColorStop(0.6, 'rgba(150,50,14,0.5)')
-    bed.addColorStop(1, 'rgba(20,8,4,0)')
-    ctx.fillStyle = bed
-    ctx.fillRect(0, 0, 128, 64)
-
-    // Darker into the corners: the throat of the arch is never this bright.
-    const vign = ctx.createRadialGradient(64, 52, 6, 64, 46, 84)
-    vign.addColorStop(0, 'rgba(0,0,0,0)')
-    vign.addColorStop(1, 'rgba(0,0,0,0.85)')
-    ctx.fillStyle = vign
-    ctx.fillRect(0, 0, 128, 64)
-
-    // A few embers sitting brighter than the rest.
-    let s = 99
-    const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 4294967296)
-    for (let i = 0; i < 22; i++) {
-      const x = 14 + rand() * 100
-      const y = 42 + rand() * 20
-      const r = 2 + rand() * 7
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-      g.addColorStop(0, `rgba(255,240,205,${0.5 + rand() * 0.5})`)
-      g.addColorStop(1, 'rgba(255,120,40,0)')
-      ctx.fillStyle = g
-      ctx.beginPath()
-      ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    const t = new THREE.CanvasTexture(c)
-    t.colorSpace = THREE.SRGBColorSpace
-    return t
-  }, [])
-}
-
 function OvenGlow({ light }: { light: SceneLight }) {
   const lamp = useRef<THREE.PointLight>(null)
   const door = useRef<THREE.Mesh>(null)
-  const fire = useFireMap()
+  const fire = useFire()
   const iron = useCastIron()
 
   /*

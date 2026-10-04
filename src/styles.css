@@ -462,3 +462,129 @@ body {
     padding: 20px 20px 18px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Arrival: the screen between opening the page and the barn being ready.
+ * See src/ui/Arrival.tsx.
+ * ------------------------------------------------------------------------ */
+
+.arrival {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: #0b0806;
+  overflow: hidden;
+  /* Slow, because it is a door opening rather than a modal closing. */
+  transition: opacity 1s ease-in-out;
+}
+
+.arrival.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.arrival-clip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Pushed down and desaturated so the wordmark holds whatever the clip is
+     doing. A full-strength video behind type is a poster, not a threshold. */
+  opacity: 0.62;
+  filter: saturate(0.82) contrast(1.04);
+  transform: scale(1.02);
+  transition: transform 1.4s ease-out, opacity 1s ease-in-out;
+}
+
+.arrival.leaving .arrival-clip {
+  transform: scale(1.06);
+}
+
+/*
+ * The doorway, for when there is no clip. A warm patch low and left of
+ * centre, breathing — which is where the light comes from in every frame of
+ * the actual room, so the empty version still belongs to the same building.
+ */
+.arrival-glow {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: min(120vw, 1100px);
+  height: min(120vw, 1100px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at 46% 54%,
+    rgba(255, 176, 92, 0.2) 0%,
+    rgba(188, 104, 44, 0.09) 34%,
+    rgba(11, 8, 6, 0) 66%
+  );
+  animation: arrival-breathe 7s ease-in-out infinite;
+}
+
+@keyframes arrival-breathe {
+  0%,
+  100% {
+    opacity: 0.74;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.045);
+  }
+}
+
+.arrival-mark {
+  position: relative;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.arrival-mark h1 {
+  margin: 0;
+  font-size: clamp(21px, 3.4vw, 34px);
+  font-weight: 400;
+  letter-spacing: 0.34em;
+  /* The letter-spacing pushes the whole word right; this pulls it back so it
+     is optically centred rather than box-centred. */
+  text-indent: 0.34em;
+  color: #f7e4c6;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.9);
+}
+
+.arrival-mark p {
+  margin: 1em 0 0;
+  font-size: clamp(10px, 1.1vw, 12px);
+  letter-spacing: 0.16em;
+  font-style: italic;
+  opacity: 0.4;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+}
+
+.arrival-bar {
+  width: clamp(120px, 18vw, 190px);
+  height: 1px;
+  margin: 2.4em auto 0;
+  background: rgba(247, 228, 198, 0.14);
+  overflow: hidden;
+}
+
+.arrival-bar span {
+  display: block;
+  height: 100%;
+  background: rgba(247, 228, 198, 0.62);
+  transform-origin: left center;
+  transition: transform 0.45s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrival-glow {
+    animation: none;
+  }
+  .arrival,
+  .arrival-clip {
+    transition-duration: 0.25s;
+  }
+}

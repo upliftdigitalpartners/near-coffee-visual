@@ -88,6 +88,9 @@ Three.js via React Three Fiber. Real geometry, real lights, real shadows.
 | --- | --- |
 | `src/three/Barn.tsx` | The structure — siding, roof, floor, frame |
 | `src/three/Backdrop.tsx` | The photographed range, and the ground under it |
+| `src/three/fire.ts` | What burns, drawn — and filmed if a clip is present |
+| `src/ui/Arrival.tsx` | The screen between opening the page and the barn |
+| `src/optional.ts` | Whether an optional asset is really there |
 | `src/three/Trees.tsx` | The conifer stand between you and the plate |
 | `src/three/Fixtures.tsx` | Counter, shelves, bulbs, and what is on them |
 | `src/three/Bakery.tsx` | The room through the back wall, and its oven |
@@ -207,14 +210,20 @@ Each of these was a visible defect first:
 The scene is driven by your clock, live weather, a scroll position and a
 pointer, which is right for a visitor and useless for checking a render — no
 two frames are of the same thing, so nothing can be compared before and after a
-change. Three query parameters pin it, and are inert unless present:
+change. These query parameters pin it, and are inert unless present:
 
 ```
 ?hour=19.6     force the time of day
 ?stop=3        stand exactly at camera station 3, no easing, no sway
 ?napkins=11    fill the wall with stand-in notes
 ?sit=0         start seated, for checking the seat views and the panel
+?ready=1       skip the arrival screen
 ```
+
+`?ready=1` exists because the arrival screen covers the frame until the scene
+reports ready, and under the software rasteriser a headless render uses, that
+can outlast the screenshot timeout. A picture of the loading screen is not a
+picture of the stove.
 
 `?hour=19.6` is the one to use. Dusk is where every rendering bug in this scene
 has shown up first, and several of them are invisible at midday.

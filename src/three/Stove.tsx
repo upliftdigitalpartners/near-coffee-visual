@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useBrass, useCastIron } from './surfaces'
+import { useFire } from './fire'
 import type { SceneLight } from './lighting'
 
 /**
@@ -61,6 +62,7 @@ function collarProfile(): THREE.Vector2[] {
 export function Stove({ light }: { light: SceneLight }) {
   const iron = useCastIron()
   const brass = useBrass()
+  const fire = useFire()
   const glow = useRef<THREE.Mesh>(null)
   const lamp = useRef<THREE.PointLight>(null)
 
@@ -92,6 +94,16 @@ export function Stove({ light }: { light: SceneLight }) {
     const f = 1 + Math.sin(t * 6.1) * 0.13 + Math.sin(t * 2.3) * 0.09
     if (lamp.current) lamp.current.intensity = (light.lampIntensity * 3.4 + 0.5) * f
     if (glow.current) {
+      /*
+       * Left at 1.15, after a detour worth recording. The map's bright centre
+       * looked blown at point-blank range — and a walker can get to within a
+       * metre of this door, so that is a real viewpoint — which read as the
+       * emissive clipping. Halving it changed the measured pixels by almost
+       * nothing: mean red stayed pinned at 252 either way. The window is not
+       * bright because of its own emissive, it is bright because of bloom and
+       * a point light at arm's length, and turning the fire down to fix
+       * something the fire was not doing would only have cost glow.
+       */
       ;(glow.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.15 * f
     }
   })
@@ -126,12 +138,22 @@ export function Stove({ light }: { light: SceneLight }) {
         <mesh material={iron} castShadow>
           <boxGeometry args={[0.34, 0.3, 0.035]} />
         </mesh>
-        {/* Mica window. Warm, and the reason anyone sits here. */}
+        {/*
+         * Mica window. Warm, and the reason anyone sits here.
+         *
+         * It was a flat emissive colour, which is the one thing a fire is
+         * not: an even orange rectangle is a screen, and the sine on its
+         * intensity only made it a screen that breathes. It now carries the
+         * same coal bed the oven does — see fire.ts — so the bottom of the
+         * firebox is bright, the throat is dark, and a few embers sit proud
+         * of the rest.
+         */}
         <mesh ref={glow} position={[0, 0.015, -0.021]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[0.2, 0.15]} />
           <meshStandardMaterial
             color="#3a1206"
             emissive={new THREE.Color('#ff7a24')}
+            emissiveMap={fire}
             emissiveIntensity={1.15}
           />
         </mesh>

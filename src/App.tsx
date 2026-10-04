@@ -15,6 +15,7 @@ import {
 import { createPresence, type Peer } from './presence/presence'
 import { fetchBake, type Bake } from './wall/bake'
 import { SEATS } from './scene/seats'
+import { Arrival } from './ui/Arrival'
 import {
   MENU,
   crossed,
@@ -34,7 +35,7 @@ import { Kitchen } from './audio/kitchen'
  * actually be standing at, rather than the middle of a four metre counter.
  */
 const COUNTER_TRAY: [number, number, number] = [4.05, 1.11, 0.55]
-import { forcedHour, forcedSeat, standInNapkins } from './scene/debug'
+import { forcedHour, forcedSeat, standInNapkins, skipArrival } from './scene/debug'
 
 function formatHour(h: number): string {
   const hh = Math.floor(h) % 24
@@ -54,6 +55,19 @@ export default function App() {
   const ambience = useRef<Ambience | null>(null)
   const radio = useRef<Radio | null>(null)
   const [soundOn, setSoundOn] = useState(false)
+  /*
+   * Whether the barn has painted a frame. Driven by Scene's own sentinel
+   * rather than by the loading manager — see Ready in Scene.tsx — with a
+   * backstop so a texture that never arrives cannot leave anyone staring at
+   * the arrival screen forever. Eighteen seconds is far longer than a cold
+   * load on a slow connection and far shorter than giving up on the page.
+   */
+  const [ready, setReady] = useState(skipArrival)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 18000)
+    return () => clearTimeout(t)
+  }, [])
+
   const [radioState, setRadioState] = useState<RadioState>({ playing: false, loading: false })
 
   const wall = useRef(createStore())
@@ -269,6 +283,7 @@ export default function App() {
         peers={peers}
         bake={bake}
         onStation={setStation}
+        onReady={() => setReady(true)}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -288,6 +303,8 @@ export default function App() {
         }
         grinding={isGrinding(order)}
       />
+
+      <Arrival ready={ready} />
 
       <header className="sign">
         <h1>near coffee</h1>

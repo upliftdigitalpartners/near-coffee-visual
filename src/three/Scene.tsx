@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Vignette, N8AO, SMAA, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
-import { Environment } from '@react-three/drei'
+import { Environment, useProgress } from '@react-three/drei'
 import * as THREE from 'three'
 import type { Daylight } from '../scene/daylight'
 import type { Solar, Weather } from '../scene/place'
@@ -178,6 +178,42 @@ function Snow({ amount }: { amount: number }) {
   )
 }
 
+/**
+ * When the barn is actually ready to be looked at.
+ *
+ * Not when the loading manager finishes. That only watches the HDRI and the
+ * photographic maps; every procedural material in the project — the soapstone,
+ * the firebrick, four worn table tops, the macro wear layers, the snow, the
+ * needles — is drawn to a canvas synchronously inside `useMemo` and is
+ * invisible to it. The loader reaches 100% and the main thread then locks for
+ * as long again, so dismissing the arrival screen on progress alone swaps a
+ * black rectangle for a frozen one.
+ *
+ * Frames are the honest signal. Once the loader is quiet *and* a few frames
+ * have gone by without a stall, the work is genuinely done, because a blocked
+ * main thread cannot render frames at all.
+ */
+function Ready({ onReady }: { onReady: () => void }) {
+  const { active, progress } = useProgress()
+  const fired = useRef(false)
+  const clean = useRef(0)
+
+  useFrame(() => {
+    if (fired.current) return
+    if (active || progress < 100) {
+      clean.current = 0
+      return
+    }
+    clean.current += 1
+    if (clean.current > 3) {
+      fired.current = true
+      onReady()
+    }
+  })
+
+  return null
+}
+
 export function Scene({
   hour,
   daylight,
@@ -190,6 +226,7 @@ export function Scene({
   bake,
   onStation,
   onProgress,
+  onReady,
   seat,
   seatIndex,
   onSit,
@@ -207,6 +244,7 @@ export function Scene({
   bake: Bake | null
   onStation?: (label: string) => void
   onProgress?: (p: number) => void
+  onReady?: () => void
   seat?: Seat | null
   seatIndex: number | null
   onSit: (i: number) => void
@@ -241,6 +279,7 @@ export function Scene({
       <fogExp2 attach="fog" args={[light.fogColor.getHex(), light.fogDensity]} />
 
       <HiddenDocumentDriver />
+      {onReady && <Ready onReady={onReady} />}
 
       {/*
        * Image-based lighting, and the single biggest reason this stopped
