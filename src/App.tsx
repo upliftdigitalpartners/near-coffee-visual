@@ -284,6 +284,26 @@ export default function App() {
     el.style.setProperty('--room-b', String(lift(c.b)))
   }, [])
 
+  /*
+   * Which board is in the case.
+   *
+   * Four photographs of a morning's bake, keyed on the local date rather than
+   * picked at random. Random would change under you between sitting down and
+   * ordering, and would mean two people in the same room on the same morning
+   * were looking at different pastries — which is a small lie but is the kind
+   * this place is built not to tell. It rolls over at local midnight, so two
+   * visitors in different time zones can disagree for a few hours; that is the
+   * same thing the daylight model already does and is the correct answer for
+   * both.
+   */
+  const plate = useMemo(() => {
+    const now = new Date()
+    const day = Math.floor(
+      (now.getTime() - now.getTimezoneOffset() * 60_000) / 86_400_000,
+    )
+    return `${import.meta.env.BASE_URL}img/pastries-${((day % 4) + 4) % 4}.jpg`
+  }, [])
+
   const conditions = place.weather
     ? ` · ${Math.round(place.weather.temperatureC)}°C ${place.weather.label}`
     : ''
@@ -493,11 +513,12 @@ export default function App() {
                * A photograph of the morning's bake at the head of the menu.
                * Loaded lazily and decoded async because it only ever appears
                * two taps in, and it must not be competing for bandwidth with
-               * the room during the arrival sequence.
+               * the room during the arrival sequence. Which of the four
+               * boards it is depends on the date — see `plate` above.
                */}
               <div className="menu-plate">
                 <img
-                  src={`${import.meta.env.BASE_URL}img/pastries.jpg`}
+                  src={plate}
                   alt=""
                   loading="lazy"
                   decoding="async"

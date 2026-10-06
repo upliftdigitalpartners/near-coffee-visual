@@ -8,21 +8,37 @@
     <meta name="theme-color" content="#1a1310" />
 
     <!--
-      The arrival still is the first frame anyone sees and is rendered by
-      React, so without this the browser does not learn it exists until the
-      bundle has parsed and mounted. Preloaded with the same `imagesrcset` the
-      <img> carries, or the phone would fetch the 960px file and then the
-      1920px one. Relative, with no leading slash, because vite.config.ts sets
+      The arrival still is the first frame anyone sees, it is chosen on the
+      visitor's local hour, and it is rendered by React — so without this the
+      browser does not learn which of the four files it needs until the bundle
+      has parsed and mounted. This runs in the head and starts the right fetch
+      immediately.
+
+      The band arithmetic is duplicated from `skyFor()` in src/ui/still.ts,
+      which is the authority. If the two ever drift the preload simply misses
+      and the image is fetched the ordinary way: slower, never broken.
+
+      Relative paths with no leading slash, because vite.config.ts sets
       base: './' so this build can sit at /room/ as well as at a root.
     -->
-    <link
-      rel="preload"
-      as="image"
-      href="img/barn.jpg"
-      imagesrcset="img/barn-sm.jpg 960w, img/barn.jpg 1920w"
-      imagesizes="100vw"
-      fetchpriority="high"
-    />
+    <script>
+      (function () {
+        var d = new Date()
+        var h = d.getHours() + d.getMinutes() / 60
+        var p = new URLSearchParams(location.search).get('hour')
+        if (p !== null && isFinite(+p)) h = ((+p % 24) + 24) % 24
+        var sky =
+          h >= 5 && h < 9 ? 'dawn' : h >= 9 && h < 16 ? 'day' : h >= 16 && h < 20 ? 'dusk' : 'night'
+        var l = document.createElement('link')
+        l.rel = 'preload'
+        l.as = 'image'
+        l.href = 'img/barn-' + sky + '.jpg'
+        l.imageSrcset = 'img/barn-' + sky + '-sm.jpg 960w, img/barn-' + sky + '.jpg 1920w'
+        l.imageSizes = '100vw'
+        l.fetchPriority = 'high'
+        document.head.appendChild(l)
+      })()
+    </script>
 
     <meta property="og:title" content="Near Coffee" />
     <meta property="og:description" content="A converted homestead barn on Mormon Row, below the Tetons. Open whenever you are." />
@@ -30,7 +46,7 @@
     <!-- Absolute, because crawlers do not resolve a relative og:image. Update
          this if the canonical host ever changes. -->
     <meta property="og:url" content="https://room.nearcoffee.space/" />
-    <meta property="og:image" content="https://room.nearcoffee.space/img/barn.jpg" />
+    <meta property="og:image" content="https://room.nearcoffee.space/img/barn-dusk.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>

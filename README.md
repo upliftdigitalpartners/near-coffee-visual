@@ -78,6 +78,19 @@ a progress rule across the foot of the frame. On a portrait phone the picture
 becomes a plate in the middle of the page rather than a cover crop, because
 cropping 16:9 to 9:19.5 leaves you with a photograph of some planks.
 
+**And it opens on the right one.** There are four photographs — hazy, bright
+with the Tetons sharp, hard low light, and heavy cloud with the mountains gone
+— and which one you get is chosen on your own clock, the same clock the room
+runs on, each with its own grade. A crisp midday photograph dissolving into a
+barn lit by a 3am moon is a cut, not a threshold. An inline script in the head
+runs the same arithmetic before the bundle has parsed, so the browser starts
+fetching the right file immediately.
+
+**The case changes with the day.** Four photographs of a morning's bake, keyed
+on the local date rather than picked at random — random would change under you
+between sitting down and ordering, and would mean two people in the same room
+on the same morning were looking at different pastries.
+
 **The radio goes around the world.** It starts on a hand-picked house set, and
 "elsewhere" moves to another country — Bangladesh, Japan, Senegal, Iceland —
 playing whatever is actually on air there now. Stations come from Radio
@@ -171,12 +184,22 @@ The left quarter of the frame has a ploughed road and a parked car. Rather than
 re-cut the file, the UVs start past them — the download stays pristine and the
 crop is one constant.
 
-The other four are **generated images supplied by the repository owner**: the
-barn on the arrival screen, the painted board hanging off the porch beam, the
-hessian on the sacks of green coffee, and the morning's bake at the head of the
-menu. They are a real step up on what they replaced — the sign in particular,
-because sign-writing is the one thing in the building a visitor *reads*, and a
-drawn letter has a mathematically clean edge that a loaded brush does not.
+The other sixteen are **generated images supplied by the repository owner**,
+cut into twenty served files: four skies for the arrival screen, four painted
+boards, four weaves for the sacks of green coffee, and four bakes for the head
+of the menu. They are a real step up on what they replaced — the signs in
+particular, because sign-writing is the one thing in the building a visitor
+*reads*, and a drawn letter has a mathematically clean edge that a loaded
+brush does not.
+
+Each set is four rather than one for the same reason the four tables each got
+their own worn top: a repeated texture is found by the eye long before it has
+worked out what it is looking at, and three identical sacks in a row is a
+tell. The four boards are *placed* differently too — the porch board's two
+faces are different photographs, because a sign painted on both sides by the
+same hand in the same week does not weather the same on the side facing the
+plain. Four identical signs would have read as a brand, which is the opposite
+of what this is.
 
 **Their licence is not established, and this repository does not claim it is.**
 Everything else here is CC0 or public domain, which is the whole reason this

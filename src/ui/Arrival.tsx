@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useProgress } from '@react-three/drei'
 import { present } from '../optional'
+import { localHour } from '../scene/daylight'
+import { forcedHour } from '../scene/debug'
+import { skyFor, stillFor } from './still'
 
 /**
  * What you look at while the barn is being built.
@@ -21,7 +24,11 @@ import { present } from '../optional'
  * barn from the outside, in the snow, on the plain — which is the entire
  * premise of the place and is unrecoverable once you are through the door.
  *
- * Three things worth being careful about.
+ * Which photograph depends on the hour — there are four skies, and the one you
+ * get is the one that hands over cleanly to the room you are about to be
+ * standing in. See `still.ts`.
+ *
+ * Four things worth being careful about.
  *
  * **Progress is not readiness.** `useProgress` watches three's loading
  * manager, which sees the HDRI and the textures and is blind to the far more
@@ -45,11 +52,16 @@ import { present } from '../optional'
  */
 
 const CLIP = `${import.meta.env.BASE_URL}video/arrival.mp4`
-const STILL = `${import.meta.env.BASE_URL}img/barn.jpg`
-const STILL_SM = `${import.meta.env.BASE_URL}img/barn-sm.jpg`
 
 export function Arrival({ ready }: { ready: boolean }) {
   const { progress } = useProgress()
+  /*
+   * Fixed on mount. The hour moves while you are standing here — the clock
+   * ticks every twenty seconds — and a loading screen that swaps its own
+   * backdrop halfway through is a glitch, not a sunrise.
+   */
+  const [sky] = useState(() => skyFor(forcedHour() ?? localHour()))
+  const still = stillFor(sky)
   const [gone, setGone] = useState(false)
   const [clip, setClip] = useState<string | null>(null)
   const video = useRef<HTMLVideoElement>(null)
@@ -83,16 +95,21 @@ export function Arrival({ ready }: { ready: boolean }) {
   if (gone) return null
 
   return (
-    <div className={`arrival ${ready ? 'leaving' : ''}`} aria-hidden={ready}>
+    <div
+      className={`arrival ${ready ? 'leaving' : ''}`}
+      data-sky={sky}
+      aria-hidden={ready}
+    >
       <img
         className="arrival-still"
-        src={STILL}
-        srcSet={`${STILL_SM} 960w, ${STILL} 1920w`}
+        src={still.src}
+        srcSet={still.srcSet}
         sizes="100vw"
         alt=""
         /* The one image on the page that must not be lazy: it is the whole
            first frame. `fetchPriority` moves it ahead of the HDRI, which the
-           visitor cannot see yet and will not miss for 300ms. */
+           visitor cannot see yet and will not miss for 300ms. The inline
+           script in index.html has normally already started this fetch. */
         fetchPriority="high"
         decoding="async"
       />

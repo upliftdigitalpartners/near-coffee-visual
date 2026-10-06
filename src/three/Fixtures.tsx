@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { GRAIN, useWoodMaps, useWoodMaterial } from './wood'
 import { useSacking, useSoapstone } from './surfaces'
+import { Board } from './Board'
 import { EspressoMachine } from './EspressoMachine'
 import { Stove } from './Stove'
 import { Cup, Saucer } from './Crockery'
@@ -270,6 +271,70 @@ export function Fixtures({
           <primitive object={carcass} attach="material" />
         </mesh>
 
+        {/*
+         * The name, on the wall above the shelf.
+         *
+         * The board on the porch is the one you walk under; this is the one
+         * you read while you wait, which is a different job and wants a
+         * different board — bolder, two lines, bigger letters, because it is
+         * seen from across a room rather than from two metres under a roof.
+         *
+         * Hung on the north wall at x = 6 rather than on the shelf, turned a
+         * quarter to face back into the room. Edges are the counter carcass
+         * timber: a sign nailed up in a working barn was cut from whatever
+         * was to hand, which here is the same stock the counter is.
+         *
+         * Placed by angle rather than by eye, in two corrections.
+         *
+         * It went up over the middle of the counter first, which is where you
+         * would hang it standing in the room. From the counter station that
+         * is 40 degrees off the camera axis, so a sliver appeared in the top
+         * right corner and nothing else — the axis from that station never
+         * reaches this wall inside the building, because it looks *down* the
+         * room and the wall runs beside it. Moving it back past the end of
+         * the counter, to z = -1.45, brings it to 18 degrees and into the
+         * right third of the frame.
+         *
+         * Then it has to thread a gap, which is the part worth writing down.
+         * Dropped to 2.25m at the same time, it landed squarely behind the
+         * row of bean jars on the shelf — which stand two metres nearer the
+         * camera, so their 22cm covers far more of the frame than their size
+         * suggests. Lifted clear of those, it ran off the top of the picture
+         * instead, because this station is pitched 5.6 degrees down and that
+         * comes straight off the available headroom. Both failures were the
+         * same mistake: judging a wall position by where it is on the wall.
+         *
+         * And then there is a third thing in the way, which is the building.
+         * Barn.tsx stands a 200mm frame post against this wall every few
+         * metres — at z = -4, -1, 1.5, 4 and 6 — and they sit proud of the
+         * siding, so the board has to live in a bay rather than anywhere on
+         * the wall. Centred at z = -2.5 it is in the middle of the widest
+         * one, and the sight line from the counter crosses the post plane at
+         * z = -2.20, clear of both neighbours.
+         *
+         * The rest is arithmetic. The jar on the sight line is 2.11m high at
+         * 3.88m out, so it cuts everything below 7.5 degrees; the frame's top
+         * edge is at camera pitch plus half the vertical fov, 17.1 degrees.
+         * At 6.82m out those bracket 2.50m and 3.70m — 1.20m of usable wall,
+         * so a 0.645m board centred at 3.10 clears both with 28cm either side.
+         *
+         * Where a sign *would* hang and where a sign can be *seen* are
+         * different questions in a room with five fixed viewpoints, and only
+         * the second one decides anything.
+         */}
+        <Board
+          edge={carcass}
+          front="textures/sign/counter.jpg"
+          /* Built lying in XY — the map lives on the ±Z faces, so the board
+             has to be 1.24 wide and 0.04 thick *before* the quarter turn, not
+             after it. Sized the other way round the lettering lands on the
+             sawn edge. */
+          size={[1.0, 0.645, 0.04]}
+          position={[1.85, 3.1, -3.5]}
+          rotation={[0, -Math.PI / 2, 0]}
+          castShadow
+        />
+
         {/* Back shelf with the day's beans and a row of cups. */}
         <mesh position={[0.75, 1.85, 0]} castShadow>
           <boxGeometry args={[0.34, 0.05, 3.4]} />
@@ -405,29 +470,62 @@ export function Fixtures({
       </group>
 
       {/*
-       * Sacks of green coffee behind the counter.
+       * Sacks of green coffee behind the counter, on a pallet.
        *
-       * Scaled rather than uniform: a full sack is taller than a half-empty
-       * one, and three identical capsules in a row is the kind of repetition
-       * the eye picks out before it has worked out what it is looking at.
+       * Four, each its own weave and its own height. A full sack is taller
+       * than a half-empty one, and identical capsules in a row are the kind
+       * of repetition the eye picks out before it has worked out what it is
+       * looking at — the same reason the tables each got their own worn top.
+       * See useSacking() in surfaces.ts.
+       *
+       * The pallet is not dressing. Sitting straight on the boards, the stack
+       * was almost entirely behind the counter from the only station that
+       * looks at it: the sight line from the counter clears the slab's far
+       * edge at y = 0.95, so a sack resting on the floor showed 28cm of dome
+       * and the other three showed nothing at all. Four weaves nobody can see
+       * is 200KB of texture spent on a private joke.
+       *
+       * Lifting them is also simply what happens to sacks — green coffee goes
+       * on a pallet because a jute sack on a cold floor wicks damp straight
+       * into the beans, and every store room that has ever held any does this.
+       * Two on the deck and two on top puts the upper pair above the counter
+       * line with half their height showing.
        */}
-      {[
-        { at: [5.3, 0.3, -1.5] as const, turn: 0, lean: 0, squash: 1.0 },
-        { at: [5.35, 0.29, -1.05] as const, turn: 0.7, lean: 0, squash: 0.92 },
-        { at: [5.25, 0.84, -1.3] as const, turn: 1.4, lean: 0.12, squash: 0.86 },
-      ].map((s, i) => (
-        <mesh
-          key={i}
-          position={[s.at[0], s.at[1], s.at[2]]}
-          rotation={[0, s.turn, s.lean]}
-          scale={[1, s.squash, 1]}
-          material={sacking}
-          castShadow
-          receiveShadow
-        >
-          <capsuleGeometry args={[0.24, 0.3, 4, 16]} />
+      <group position={[5.3, 0, -1.4]}>
+        {/* Four slats and two bearers. */}
+        <mesh position={[0, 0.12, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.12, 0.045, 0.84]} />
+          <primitive object={carcass} attach="material" />
         </mesh>
-      ))}
+        {[-0.3, 0.3].map((z) => (
+          <mesh key={z} position={[0, 0.05, z]} castShadow>
+            <boxGeometry args={[1.08, 0.095, 0.1]} />
+            <primitive object={carcass} attach="material" />
+          </mesh>
+        ))}
+
+        {[
+          // Deck of the pallet is at 0.1425; a sack's half-height is
+          // 0.39 * squash, so each centre is that much above whatever it
+          // stands on.
+          { at: [-0.2, 0.533, -0.18] as const, turn: 0.0, lean: 0, squash: 1.0 },
+          { at: [0.18, 0.502, -0.12] as const, turn: 0.7, lean: 0, squash: 0.92 },
+          { at: [-0.14, 1.258, 0.1] as const, turn: 1.4, lean: 0.1, squash: 0.86 },
+          { at: [0.2, 1.236, 0.16] as const, turn: 2.3, lean: -0.06, squash: 0.96 },
+        ].map((k, i) => (
+          <mesh
+            key={i}
+            position={[k.at[0], k.at[1], k.at[2]]}
+            rotation={[0, k.turn, k.lean]}
+            scale={[1, k.squash, 1]}
+            material={sacking[i]}
+            castShadow
+            receiveShadow
+          >
+            <capsuleGeometry args={[0.24, 0.3, 4, 16]} />
+          </mesh>
+        ))}
+      </group>
 
       {/* Two more tables down the room, with stools. */}
       {[
@@ -455,6 +553,38 @@ export function Fixtures({
           ))}
         </Table>
       ))}
+
+      {/*
+       * The board they took down, leaning against the front wall by the door.
+       *
+       * Every sign-written premises open longer than a decade has one of
+       * these somewhere: the previous board, too good to burn and not good
+       * enough to hang. It is also the only honest thing to do with a second
+       * painting of the same two words — four identical signs in one small
+       * building reads as a brand, and a brand is the opposite of what this
+       * is.
+       *
+       * Inside rather than on the porch, which is where it first went. The
+       * porch has exactly one camera station, it stands at the wall facing
+       * out at the plain, and nothing against that wall is in its frame at
+       * any angle — so the board was a correctly-built object that no visitor
+       * could ever have seen. Here it is 17 degrees off the axis of the
+       * opening shot, low and left, with the chalkboard answering it on the
+       * right.
+       *
+       * Leaned twelve degrees, bottom out, so the face points up into the
+       * room. One face: the reverse is against the siding.
+       */}
+      <group position={[-2.55, 0, -3.84]} rotation={[-0.2, 0, 0]}>
+        <Board
+          edge={carcass}
+          front="textures/sign/spare.jpg"
+          size={[1.15, 0.605, 0.03]}
+          position={[0, 0.303, 0]}
+          castShadow
+          receiveShadow
+        />
+      </group>
 
       {/* A bench along the south wall. */}
       <group position={[-5.5, 0, 2.2]}>

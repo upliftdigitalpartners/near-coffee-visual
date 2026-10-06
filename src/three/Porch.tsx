@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { useTexture } from '@react-three/drei'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { BARN } from './Barn'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 import { useSilvered } from './coats'
+import { Board } from './Board'
 
 /**
  * The porch.
@@ -157,29 +157,29 @@ function usePorchGeometry() {
  * This was drawn on a canvas, for the reason set out at the top of
  * `src/wall/sign.ts`: text on a plank, kept crisp at any distance. The canvas
  * is still in the tree and still the way anything else lettered should be
- * made, but it is no longer what hangs on the porch, because a drawn sign
- * has one failure a photographed one does not — the letters are vector shapes with a wear mask knocked out of them,
- * and a vector shape has a mathematically clean edge. Real sign-writing does
- * not: a brush loaded with lead paint leaves a ragged, slightly uneven edge
- * that thickens on the downstrokes, and the paint lifts in flakes that take
- * the board's grain with them rather than in little ellipses.
+ * made, but it is no longer what hangs on the porch, because a drawn sign has
+ * one failure a photographed one does not — the letters are vector shapes
+ * with a wear mask knocked out of them, and a vector shape has a
+ * mathematically clean edge. Real sign-writing does not: a brush loaded with
+ * lead paint leaves a ragged, slightly uneven edge that thickens on the
+ * downstrokes, and the paint lifts in flakes that take the board's grain with
+ * them rather than in little ellipses.
  *
- * So the board is now a photograph of a board. It is the one object in the
+ * So the board is a photograph of a board. It is the one object in the
  * building a visitor reads rather than looks at, which is exactly where a
  * procedural approximation is least forgiving.
  *
- * Cropped to 2.5:1 to match the plank it is mapped onto — the same ratio as
- * the box below, so the lettering is not stretched. See CREDITS.md for where
- * the image came from and what is still open about its licence.
+ * **The two faces are different photographs.** The side facing the plain has
+ * taken a hundred winters of driven snow and the side under the porch roof
+ * has not, and a sign painted on both faces by the same hand in the same week
+ * does not end up looking the same on both. Using one image twice was the
+ * cheaper lie, and it is the kind that shows the moment anyone walks round
+ * the post. Both crops are 2.5:1 to match the plank, so neither is stretched.
+ *
+ * See CREDITS.md for where the images came from and what is still open about
+ * their licence.
  */
-function Sign() {
-  const map = useTexture(`${import.meta.env.BASE_URL}textures/sign/near-coffee.jpg`)
-  useMemo(() => {
-    map.colorSpace = THREE.SRGBColorSpace
-    map.anisotropy = 8
-    map.needsUpdate = true
-  }, [map])
-
+function Sign({ edge }: { edge: THREE.Material }) {
   return (
     <group position={[3.2, P.roofEdge - 0.22, P.z1 + 0.3]}>
       {/* Two short chains from the beam. */}
@@ -190,14 +190,20 @@ function Sign() {
         </mesh>
       ))}
       {/*
-       * Faced both ways. It reads from the porch and from inside the doorway,
-       * and a one-sided sign is invisible from exactly the angle most visitors
-       * arrive at.
+       * Faced both ways. It reads from the porch and from out on the snow,
+       * and a one-sided sign is invisible from exactly the angle most
+       * visitors arrive at.
        */}
-      <mesh castShadow>
-        <boxGeometry args={[1.05, 0.42, 0.035]} />
-        <meshStandardMaterial map={map} roughness={0.86} />
-      </mesh>
+      <Board
+        edge={edge}
+        /* +Z is the sheltered face, which is the one you stand under on the
+           deck, so it carries the larger crop. −Z points at the plain and is
+           read from thirty metres away in the snow, if at all. */
+        front="textures/sign/porch-front.jpg"
+        back="textures/sign/porch-back.jpg"
+        size={[1.05, 0.42, 0.035]}
+        castShadow
+      />
     </group>
   )
 }
@@ -251,7 +257,7 @@ export function Porch() {
         ))}
       </group>
 
-      <Sign />
+      <Sign edge={timber} />
     </group>
   )
 }

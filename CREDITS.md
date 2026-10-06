@@ -70,24 +70,49 @@ there is no file to license and no provenance to check.
 
 ## Generated images — provenance recorded, licence NOT established
 
-Four images, supplied by the repository owner and committed in `0f935d8`
-("added media"). The full set of sixteen generations sits in `Ai-Images/` at
-the repository root; it is not served and is not part of the build. What is
-served is these:
+**All sixteen** generations supplied by the repository owner and committed in
+`0f935d8` ("added media") are now in use. The originals stay in `Ai-Images/` at
+the repository root; that directory is not served and is not part of the build.
+What is served is the twenty files cut from them:
 
-| Served file | Source generation | Used for |
+**Four skies, one per quarter of the day** (`public/img/barn-*.jpg`, each with
+a `-sm` variant). The arrival screen picks one on the visitor's local hour —
+see `src/ui/still.ts`. `barn-dusk.jpg` is also the `og:image`.
+
+| Served | Source generation |
+| --- | --- |
+| `barn-dawn` | `Weathered_timber_barn_in_snow_20261005201445.jpg` |
+| `barn-day` | `Weathered_timber_barn_in_snow_20261005201440.jpg` |
+| `barn-dusk` | `Timber_barn_standing_in_snow_20261005201449.jpg` |
+| `barn-night` | `Timber_barn_in_snow_valley_20261005201404.jpg` |
+
+**Four boards, one per place** (`public/textures/sign/`).
+
+| Served | Source generation | Where |
 | --- | --- | --- |
-| `public/img/barn.jpg`, `public/img/barn-sm.jpg` | `Timber_barn_standing_in_snow_20261005201449.jpg` | The arrival screen, and the `og:image` |
-| `public/textures/sign/near-coffee.jpg` | `Painted_wooden_coffee_sign_20261005201519.jpg` | The board hanging off the porch beam |
-| `public/textures/jute/jute.jpg` | `Coarse_jute_hessian_sacking_texture_20261005201537.jpg` | The sacks of green coffee behind the counter |
-| `public/img/pastries.jpg` | `Bakery_goods_on_wooden_board_20261005201453.jpg` | The head of the menu on the seated card |
+| `porch-front.jpg` | `Painted_wooden_coffee_sign_20261005201519.jpg` | The sheltered face of the hanging porch board |
+| `porch-back.jpg` | `Wooden_sign_reading_Near_Coffee_20261005201523.jpg` | Its weather face |
+| `counter.jpg` | `Wooden_sign_reading_near_coffee_20261005201513.jpg` | The north wall above the counter |
+| `spare.jpg` | `Hand-painted_wooden_coffee_sign_20261005201509.jpg` | The old board, leaning by the door |
 
-Each was cropped, resized, compressed and — for the pastries — graded, from
-the 1376 × 768 original. Nothing else was changed.
+**Four weaves, one per sack** (`public/textures/jute/jute-0..3.jpg`), from
+`Coarse_…201537`, `Close-up_…201527`, `Coarse_…201541` and `Jute_…201531` in
+that order. Albedo only — the normal and roughness maps are derived from each
+file's own luminance at runtime by `useSacking()` in `src/three/surfaces.ts`.
 
-**These are not CC0 and this file does not claim they are.** Read the
-paragraph under *Video* below: it was written before any generated asset
-existed here and it applies to these in full. Specifically, still open:
+**Four bakes, one per day of a four-day cycle** (`public/img/pastries-0..3.jpg`),
+from `Bakery_goods_on_wooden_board_…201453`, `…201457`, `…201501` and `…201505`.
+The menu card picks one on the local date.
+
+Processing, from the 1376 × 768 originals: barns resized to 1920 × 1072 (q70)
+and 960 × 536 (q66); signs cropped to the ratio of the plank each is mapped
+onto, so none is stretched; jute square-cropped to 400 × 400 (q74); pastries
+cropped to the middle 3.2:1 band, 1100 × 344, saturation × 0.92 and brightness
+× 0.88 baked in (q72). Nothing else was changed.
+
+**These are not CC0 and this file does not claim they are.** Read the paragraph
+under *Video* below: it was written before any generated asset existed here and
+it applies to these in full. Specifically, still open:
 
 - **Which tool produced them, under which account, on which tier.** The
   filenames and timestamps are all this repository records, and the terms that
@@ -109,11 +134,18 @@ egress policy blocks nearly every host, so no terms were read. The images are
 in use because the owner supplied them for that purpose; the licence question
 is recorded here, unresolved, and is the owner's to close before this trades.
 
-If the answer turns out to be no, the swap is small and local: the sign falls
-back to `signTexture()` in `src/wall/sign.ts`, which still exists and still
-works; the sacks fall back to a flat material; the arrival screen falls back to
-the warm-doorway gradient it had before. Only the pastry band has no
-substitute, and it can simply be dropped.
+If the answer turns out to be no, the swap is small and local, and it is worth
+knowing the cost before it has to be paid:
+
+- **Signs** fall back to `signTexture()` in `src/wall/sign.ts`, which still
+  exists and still works. The two extra boards are deleted rather than
+  replaced.
+- **Sacks** fall back to a flat material. `useSacking()` keeps its shape; only
+  the maps go.
+- **The arrival screen** falls back to the warm-doorway gradient it had before,
+  and `src/ui/still.ts` is deleted along with the inline preload script in
+  `index.html`.
+- **The pastry band** has no substitute and is simply dropped.
 
 ## Video, if any is ever added
 

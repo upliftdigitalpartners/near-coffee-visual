@@ -722,51 +722,72 @@ export function useFirebrick(soot = 1) {
  * cloth is thin. A single colour cannot do any of that, and no amount of
  * roughness tuning gets you there, because the information is spatial.
  *
- * So: a photographed weave, with the normal and roughness derived from its own
+ * So: photographed weave, with the normal and roughness derived from its own
  * luminance in exactly the way every other surface in this file derives them.
  * The jute is pale and the shadow between the threads is dark, which makes
  * luminance a near-perfect height field for once — the bright bits really are
  * the bits standing proud.
  *
- * One repeat, not a tile. A sack is about half a metre and the crop is about
- * half a metre of real cloth, so it wraps once with no seam to hide.
+ * **Four weaves, not one.** This is the same point the tables made: a stack of
+ * sacks is a stack of *different* sacks, from different mills and different
+ * seasons, and the eye finds a repeated texture long before it has worked out
+ * what it is looking at. Four coarsenesses, four tints — and because each
+ * carries its own derived normal and roughness, the differences survive into
+ * the lighting rather than stopping at the colour.
+ *
+ * One repeat each, not a tile. A sack is about half a metre and each crop is
+ * about half a metre of real cloth, so it wraps once with no seam to hide.
  */
-export function useSacking(): THREE.MeshStandardMaterial {
-  const map = useTexture(`${import.meta.env.BASE_URL}textures/jute/jute.jpg`)
+const SACK_COUNT = 4
 
-  return useMemo(() => {
-    map.colorSpace = THREE.SRGBColorSpace
-    map.wrapS = map.wrapT = THREE.RepeatWrapping
-    map.anisotropy = 8
-    map.needsUpdate = true
+/*
+ * Multiplied down, and each one differently.
+ *
+ * The crops are clean, pale, evenly-lit swatches, and the first sack came
+ * back brighter than the siding behind it — 149 against 97, measured off the
+ * counter station at half past ten — which read as a basket under a spotlight
+ * rather than as a sack on a floor. Multiplication is the right instrument
+ * here for once: the sources are paler than the target, which is the one
+ * direction `color` can actually move an albedo map. See the note in
+ * Porch.tsx about what happens when you ask it to go the other way.
+ */
+const SACK_TINT = ['#c0b29a', '#b3a68e', '#c6b89f', '#ad9f87']
 
-    // useTexture has suspended until this decoded, so .image is an <img>.
-    const h = heights(map.image as CanvasImageSource, DERIVE)
-    const normalMap = normalFrom(h, DERIVE, 1.6)
-    const roughnessMap = roughnessFrom(h, DERIVE, 0.78, 0.98)
-    normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping
-    roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping
+export function useSacking(): THREE.MeshStandardMaterial[] {
+  const maps = useTexture(
+    Array.from(
+      { length: SACK_COUNT },
+      (_, i) => `${import.meta.env.BASE_URL}textures/jute/jute-${i}.jpg`,
+    ),
+  ) as THREE.Texture[]
 
-    return new THREE.MeshStandardMaterial({
-      map,
-      /*
-       * Multiplied down. The crop is a clean, pale, evenly-lit swatch, and
-       * the sack came back brighter than the siding behind it — 149 against
-       * 97, measured off the counter station at half past ten — which read as
-       * a woven basket under a spotlight rather than as a sack on a floor.
-       * Multiplication is the right instrument here for once: the source is
-       * paler than the target, which is the one direction `color` can
-       * actually move an albedo map. See the note in Porch.tsx about what
-       * happens when you ask it to go the other way.
-       */
-      color: new THREE.Color('#c0b29a'),
-      normalMap,
-      // Shallow. The weave is 2mm of relief on a surface a visitor sees from
-      // three metres; pushed harder it reads as corrugated iron.
-      normalScale: new THREE.Vector2(0.55, 0.55),
-      roughnessMap,
-      roughness: 1,
-      metalness: 0,
-    })
-  }, [map])
+  return useMemo(
+    () =>
+      maps.map((map, i) => {
+        map.colorSpace = THREE.SRGBColorSpace
+        map.wrapS = map.wrapT = THREE.RepeatWrapping
+        map.anisotropy = 8
+        map.needsUpdate = true
+
+        // useTexture has suspended until these decoded, so .image is an <img>.
+        const h = heights(map.image as CanvasImageSource, DERIVE)
+        const normalMap = normalFrom(h, DERIVE, 1.6)
+        const roughnessMap = roughnessFrom(h, DERIVE, 0.78, 0.98)
+        normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping
+        roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping
+
+        return new THREE.MeshStandardMaterial({
+          map,
+          color: new THREE.Color(SACK_TINT[i]),
+          normalMap,
+          // Shallow. The weave is 2mm of relief on a surface a visitor sees
+          // from three metres; pushed harder it reads as corrugated iron.
+          normalScale: new THREE.Vector2(0.55, 0.55),
+          roughnessMap,
+          roughness: 1,
+          metalness: 0,
+        })
+      }),
+    [maps],
+  )
 }

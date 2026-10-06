@@ -960,9 +960,10 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* The source is a cold, bright, high-key winter photograph and the room
-     behind it is warm and dark. Graded down and toward amber so the cut is
-     not a flash of white, and so the two images read as the same morning. */
+  /* The sources are cold, bright, high-key winter photographs and the room
+     behind them is warm and dark. Graded down and toward amber so the cut is
+     not a flash of white, and so the two images read as the same morning.
+     This is the default; each sky overrides it below. */
   filter: saturate(0.95) contrast(1.06) brightness(0.88) sepia(0.09);
   transform: scale(1.04);
   animation: arrival-push 20s linear both;
@@ -979,6 +980,52 @@ body {
 
 .arrival.leaving .arrival-clip {
   transform: scale(1.06);
+}
+
+/*
+ * One grade per sky.
+ *
+ * Choosing the right photograph gets you most of the way and not all of it:
+ * all four were generated under more or less the same flat winter light, so
+ * the "night" one is a dim overcast afternoon rather than a night, and left
+ * alone it dissolves into a 3am room with the lights off and the seam is the
+ * only thing you see. The grade is what closes the remaining distance —
+ * warmer and lifted at dawn, neutral and open at midday, amber and contrasty
+ * at dusk, and pushed properly down and blue after dark.
+ */
+.arrival[data-sky='dawn'] .arrival-still {
+  filter: saturate(0.9) contrast(1.02) brightness(0.94) sepia(0.14);
+}
+
+.arrival[data-sky='day'] .arrival-still {
+  filter: saturate(0.98) contrast(1.08) brightness(0.92) sepia(0.04);
+}
+
+.arrival[data-sky='dusk'] .arrival-still {
+  filter: saturate(1) contrast(1.12) brightness(0.84) sepia(0.16);
+}
+
+.arrival[data-sky='night'] .arrival-still {
+  /* hue-rotate toward blue rather than a blue overlay, so the snow goes cold
+     and the timber stays timber. An overlay flattens both together.
+     Taken to 0.42 first, which was a night and not a photograph: the snow
+     dropped below the shade gradients laid over it and the bottom half of the
+     frame went to flat mud. Snow at night is the brightest thing in a winter
+     landscape, not the darkest, and the picture has to keep saying so. */
+  filter: saturate(0.68) contrast(1.08) brightness(0.56) hue-rotate(-8deg);
+}
+
+/* The warm wash in the shade is the doorway, so it follows the same logic:
+   strongest when the room behind it is darkest. */
+.arrival[data-sky='night'] .arrival-shade {
+  background:
+    linear-gradient(180deg, rgba(6, 5, 4, 0.78), rgba(6, 5, 4, 0.14) 46%),
+    linear-gradient(0deg, rgba(6, 5, 4, 0.9), rgba(6, 5, 4, 0) 46%),
+    radial-gradient(
+      ellipse 70% 60% at 22% 86%,
+      rgba(255, 168, 82, 0.3),
+      transparent 70%
+    );
 }
 
 @keyframes arrival-push {
@@ -1001,7 +1048,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(8, 6, 4, 0.72), rgba(8, 6, 4, 0.12) 42%),
+    linear-gradient(180deg, rgba(8, 6, 4, 0.82), rgba(8, 6, 4, 0.1) 46%),
     linear-gradient(0deg, rgba(8, 6, 4, 0.86), rgba(8, 6, 4, 0) 46%),
     radial-gradient(
       ellipse 70% 60% at 22% 86%,
@@ -1052,6 +1099,15 @@ body {
   display: block;
 }
 
+/*
+ * Lighter than --accent, and that is deliberate.
+ *
+ * The in-scene masthead sits over timber; this one sits over a snowfield at
+ * near-full white, and mid-amber micro-caps on snow do not read at any shadow
+ * strength — the hue is close enough in luminance to the background that the
+ * letterforms simply dissolve. Mixed most of the way to cream, it keeps the
+ * warm cast and gets the contrast back.
+ */
 .arrival-mark p {
   margin: var(--s4) 0 0;
   font-family: var(--ui);
@@ -1059,8 +1115,10 @@ body {
   font-weight: 700;
   letter-spacing: var(--track-mega);
   text-transform: uppercase;
-  color: var(--accent);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  color: color-mix(in srgb, var(--accent) 42%, #fff3dd);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.85),
+    0 2px 20px rgba(0, 0, 0, 0.95);
 }
 
 /* The bar -----------------------------------------------------------------
