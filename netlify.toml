@@ -2,6 +2,55 @@
   command = "npm run build"
   publish = "dist"
 
+# Caching.
+#
+# This file carried no header rules at all, so every deploy summary read "No
+# header rules processed" and every asset came back on Netlify's default. That
+# matters more here than it would on most sites: the first visit pulls an
+# HDRI, four 1k PBR maps, a 3840px photograph and — since the generated images
+# landed — a barn still, four hessian weaves and four painted boards. None of
+# that changes between deploys, and all of it was being revalidated.
+#
+# Two tiers, for one reason: only /assets/ filenames carry a content hash.
+# Vite puts one in every bundled file it emits, so those can be immutable for
+# a year and a changed file simply arrives under a new name. Everything in
+# public/ keeps the name it was given — barn-day.jpg stays barn-day.jpg even
+# if the picture inside it is replaced — so a year would be a trap. A week is
+# long enough to cover a returning visitor and short enough that replacing an
+# image is not a support problem.
+#
+# Mirrors the rules in vercel.json, which serves room.nearcoffee.space.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/textures/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/hdri/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+
+# The SPA fallback. Note this returns 200, not 404, for anything missing —
+# which is why src/optional.ts probes the optional video clips by content type
+# rather than by status: a HEAD for an absent clip comes back 200 with an HTML
+# body, and `response.ok` would have passed an HTML document to a <video>.
 [[redirects]]
   from = "/*"
   to = "/index.html"
