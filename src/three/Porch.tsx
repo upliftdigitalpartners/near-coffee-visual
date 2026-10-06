@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
+import { useTexture } from '@react-three/drei'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { BARN } from './Barn'
 import { chamferedBox, GRAIN, plankUVs, useWoodMaps, useWoodMaterial } from './wood'
 import { useSilvered } from './coats'
-import { signTexture } from '../wall/sign'
 
 /**
  * The porch.
@@ -151,14 +151,34 @@ function usePorchGeometry() {
   }, [])
 }
 
-/** The board over the door, painted years ago and touched up since. */
+/**
+ * The board over the door, painted years ago and touched up since.
+ *
+ * This was drawn on a canvas, for the reason set out at the top of
+ * `src/wall/sign.ts`: text on a plank, kept crisp at any distance. The canvas
+ * is still in the tree and still the way anything else lettered should be
+ * made, but it is no longer what hangs on the porch, because a drawn sign
+ * has one failure a photographed one does not — the letters are vector shapes with a wear mask knocked out of them,
+ * and a vector shape has a mathematically clean edge. Real sign-writing does
+ * not: a brush loaded with lead paint leaves a ragged, slightly uneven edge
+ * that thickens on the downstrokes, and the paint lifts in flakes that take
+ * the board's grain with them rather than in little ellipses.
+ *
+ * So the board is now a photograph of a board. It is the one object in the
+ * building a visitor reads rather than looks at, which is exactly where a
+ * procedural approximation is least forgiving.
+ *
+ * Cropped to 2.5:1 to match the plank it is mapped onto — the same ratio as
+ * the box below, so the lettering is not stretched. See CREDITS.md for where
+ * the image came from and what is still open about its licence.
+ */
 function Sign() {
-  const map = useMemo(() => {
-    const t = new THREE.CanvasTexture(signTexture())
-    t.colorSpace = THREE.SRGBColorSpace
-    t.anisotropy = 8
-    return t
-  }, [])
+  const map = useTexture(`${import.meta.env.BASE_URL}textures/sign/near-coffee.jpg`)
+  useMemo(() => {
+    map.colorSpace = THREE.SRGBColorSpace
+    map.anisotropy = 8
+    map.needsUpdate = true
+  }, [map])
 
   return (
     <group position={[3.2, P.roofEdge - 0.22, P.z1 + 0.3]}>

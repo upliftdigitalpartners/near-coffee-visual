@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { GRAIN, useWoodMaps, useWoodMaterial } from './wood'
-import { useSoapstone } from './surfaces'
+import { useSacking, useSoapstone } from './surfaces'
 import { EspressoMachine } from './EspressoMachine'
 import { Stove } from './Stove'
 import { Cup, Saucer } from './Crockery'
@@ -233,6 +233,7 @@ export function Fixtures({
   grinding?: boolean
 }) {
   const stone = useSoapstone()
+  const sacking = useSacking()
   const carcass = useFurnitureWood('#4a3a28')
   // Clearly paler than the floor. Planed fir that has been waxed and wiped
   // down twice a day is not the same colour as a hundred-year-old barn floor,
@@ -403,11 +404,28 @@ export function Fixtures({
         </mesh>
       </group>
 
-      {/* Sacks of green coffee behind the counter. */}
-      {[[5.3, 0.3, -1.5], [5.35, 0.3, -1.05], [5.25, 0.86, -1.3]].map(([x, y, z], i) => (
-        <mesh key={i} position={[x, y, z]} rotation={[0, i * 0.7, i === 2 ? 0.12 : 0]} castShadow receiveShadow>
-          <capsuleGeometry args={[0.24, 0.3, 4, 12]} />
-          <meshStandardMaterial color="#9c8d6f" roughness={0.95} />
+      {/*
+       * Sacks of green coffee behind the counter.
+       *
+       * Scaled rather than uniform: a full sack is taller than a half-empty
+       * one, and three identical capsules in a row is the kind of repetition
+       * the eye picks out before it has worked out what it is looking at.
+       */}
+      {[
+        { at: [5.3, 0.3, -1.5] as const, turn: 0, lean: 0, squash: 1.0 },
+        { at: [5.35, 0.29, -1.05] as const, turn: 0.7, lean: 0, squash: 0.92 },
+        { at: [5.25, 0.84, -1.3] as const, turn: 1.4, lean: 0.12, squash: 0.86 },
+      ].map((s, i) => (
+        <mesh
+          key={i}
+          position={[s.at[0], s.at[1], s.at[2]]}
+          rotation={[0, s.turn, s.lean]}
+          scale={[1, s.squash, 1]}
+          material={sacking}
+          castShadow
+          receiveShadow
+        >
+          <capsuleGeometry args={[0.24, 0.3, 4, 16]} />
         </mesh>
       ))}
 

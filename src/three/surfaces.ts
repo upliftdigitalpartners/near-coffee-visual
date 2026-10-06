@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
+import { useTexture } from '@react-three/drei'
 
 /**
  * Surfaces that are not the barn.
@@ -121,8 +122,8 @@ function soapstoneAlbedo(): HTMLCanvasElement {
   return c
 }
 
-/** Luminance of a canvas, downsampled, as a height field. */
-function heights(src: HTMLCanvasElement, size: number): Float32Array {
+/** Luminance of a canvas or decoded image, downsampled, as a height field. */
+function heights(src: CanvasImageSource, size: number): Float32Array {
   const [, ctx] = canvas(size)
   ctx.drawImage(src, 0, 0, size, size)
   const d = ctx.getImageData(0, 0, size, size).data
@@ -707,4 +708,65 @@ export function useFirebrick(soot = 1) {
       envMapIntensity: 0.4,
     })
   }, [soot])
+}
+
+/**
+ * Sacking.
+ *
+ * The sacks of green coffee behind the counter were capsules painted
+ * `#9c8d6f` at roughness 0.95 — a flat biscuit colour, which is what a bag of
+ * beans averages out to and nothing like what one looks like. Hessian is the
+ * most texture-dependent material in the building: it is an open weave of
+ * coarse fibre, so at any distance where you can see it at all you can see
+ * the grid, and the light that gets through the gaps is what tells you the
+ * cloth is thin. A single colour cannot do any of that, and no amount of
+ * roughness tuning gets you there, because the information is spatial.
+ *
+ * So: a photographed weave, with the normal and roughness derived from its own
+ * luminance in exactly the way every other surface in this file derives them.
+ * The jute is pale and the shadow between the threads is dark, which makes
+ * luminance a near-perfect height field for once — the bright bits really are
+ * the bits standing proud.
+ *
+ * One repeat, not a tile. A sack is about half a metre and the crop is about
+ * half a metre of real cloth, so it wraps once with no seam to hide.
+ */
+export function useSacking(): THREE.MeshStandardMaterial {
+  const map = useTexture(`${import.meta.env.BASE_URL}textures/jute/jute.jpg`)
+
+  return useMemo(() => {
+    map.colorSpace = THREE.SRGBColorSpace
+    map.wrapS = map.wrapT = THREE.RepeatWrapping
+    map.anisotropy = 8
+    map.needsUpdate = true
+
+    // useTexture has suspended until this decoded, so .image is an <img>.
+    const h = heights(map.image as CanvasImageSource, DERIVE)
+    const normalMap = normalFrom(h, DERIVE, 1.6)
+    const roughnessMap = roughnessFrom(h, DERIVE, 0.78, 0.98)
+    normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping
+    roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping
+
+    return new THREE.MeshStandardMaterial({
+      map,
+      /*
+       * Multiplied down. The crop is a clean, pale, evenly-lit swatch, and
+       * the sack came back brighter than the siding behind it — 149 against
+       * 97, measured off the counter station at half past ten — which read as
+       * a woven basket under a spotlight rather than as a sack on a floor.
+       * Multiplication is the right instrument here for once: the source is
+       * paler than the target, which is the one direction `color` can
+       * actually move an albedo map. See the note in Porch.tsx about what
+       * happens when you ask it to go the other way.
+       */
+      color: new THREE.Color('#c0b29a'),
+      normalMap,
+      // Shallow. The weave is 2mm of relief on a surface a visitor sees from
+      // three metres; pushed harder it reads as corrugated iron.
+      normalScale: new THREE.Vector2(0.55, 0.55),
+      roughnessMap,
+      roughness: 1,
+      metalness: 0,
+    })
+  }, [map])
 }

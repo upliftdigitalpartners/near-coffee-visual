@@ -12,7 +12,16 @@ import { present } from '../optional'
  * cellular that is several seconds of nothing at all, which is long enough to
  * close the tab.
  *
- * Two things worth being careful about.
+ * This used to be the wordmark over a dark rectangle with a warm patch
+ * breathing behind it, which was defensible but was still, in the end, a
+ * black screen with a spinner on it. It is now a photograph of the building
+ * you are about to be standing inside, full bleed, with a slow push on it.
+ * That is a better use of the four seconds for a reason beyond decoration:
+ * the scene opens *inside* the barn, so without this nobody ever sees the
+ * barn from the outside, in the snow, on the plain — which is the entire
+ * premise of the place and is unrecoverable once you are through the door.
+ *
+ * Three things worth being careful about.
  *
  * **Progress is not readiness.** `useProgress` watches three's loading
  * manager, which sees the HDRI and the textures and is blind to the far more
@@ -22,15 +31,22 @@ import { present } from '../optional'
  * driven by the loader, and the *dismissal* is driven by frames actually
  * being rendered: see `Ready` in Scene.tsx.
  *
+ * **The mark does not move when the overlay goes.** It is set at the same
+ * gutter as the real masthead in `.sign`, so as this fades out the name is
+ * already where it is about to be, only larger. The eye reads that as one
+ * object settling rather than two things swapping over, which is most of why
+ * the transition does not feel like a loading screen being dismissed.
+ *
  * **It has to stand up with no video in it.** `public/video/arrival.mp4` is
  * optional and expected to be absent, so it is probed before a video element
  * is ever created — by content type, not by status, for the reason set out in
- * src/optional.ts. Without it this is the wordmark over a dark room with a
- * warm doorway breathing behind it, which is the building's own palette and
- * is not a placeholder for anything.
+ * src/optional.ts. The photograph is the default and is not a placeholder for
+ * it; the clip, if it ever arrives, dissolves in on top.
  */
 
 const CLIP = `${import.meta.env.BASE_URL}video/arrival.mp4`
+const STILL = `${import.meta.env.BASE_URL}img/barn.jpg`
+const STILL_SM = `${import.meta.env.BASE_URL}img/barn-sm.jpg`
 
 export function Arrival({ ready }: { ready: boolean }) {
   const { progress } = useProgress()
@@ -68,6 +84,18 @@ export function Arrival({ ready }: { ready: boolean }) {
 
   return (
     <div className={`arrival ${ready ? 'leaving' : ''}`} aria-hidden={ready}>
+      <img
+        className="arrival-still"
+        src={STILL}
+        srcSet={`${STILL_SM} 960w, ${STILL} 1920w`}
+        sizes="100vw"
+        alt=""
+        /* The one image on the page that must not be lazy: it is the whole
+           first frame. `fetchPriority` moves it ahead of the HDRI, which the
+           visitor cannot see yet and will not miss for 300ms. */
+        fetchPriority="high"
+        decoding="async"
+      />
       {clip && (
         <video
           ref={video}
@@ -80,13 +108,24 @@ export function Arrival({ ready }: { ready: boolean }) {
           preload="auto"
         />
       )}
-      <div className="arrival-glow" />
-      <div className="arrival-mark">
-        <h1>near coffee</h1>
-        <p>a barn on mormon row · open whenever you are</p>
+      <div className="arrival-shade" />
+
+      <header className="arrival-mark">
+        <h1>
+          <span>Near</span>
+          <span>Coffee</span>
+        </h1>
+        <p>Mormon Row, Wyoming</p>
+      </header>
+
+      <div className="arrival-foot">
+        <span className="arrival-state">
+          {ready ? 'the door is open' : 'laying the fire'}
+        </span>
         <div className="arrival-bar">
           <span style={{ transform: `scaleX(${shown / 100})` }} />
         </div>
+        <span className="arrival-pct">{String(Math.round(shown)).padStart(2, '0')}</span>
       </div>
     </div>
   )

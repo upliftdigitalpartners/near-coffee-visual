@@ -31,16 +31,37 @@
   --ink-on-warm: #1a120b;
 
   /* Glass ---------------------------------------------------------------- */
-  --pane: color-mix(in srgb, var(--room) 10%, rgba(14, 11, 9, 0.56));
-  --pane-high: color-mix(in srgb, var(--room) 14%, rgba(18, 14, 11, 0.7));
-  --pane-edge: color-mix(in srgb, var(--room) 24%, rgba(255, 244, 228, 0.1));
-  --pane-edge-top: color-mix(in srgb, var(--room) 34%, rgba(255, 248, 236, 0.16));
+  /* Darker and more opaque than the first pass. The panes were 56% and the
+     type on them was legible but only just, and "only just" over a render
+     that changes every frame means it fails somewhere. There is no cost to
+     this: the blur already destroyed whatever was behind the pane, so the
+     extra opacity buys contrast and gives up nothing you could see. */
+  --pane: color-mix(in srgb, var(--room) 9%, rgba(12, 9, 7, 0.68));
+  --pane-high: color-mix(in srgb, var(--room) 13%, rgba(16, 12, 9, 0.8));
+  --pane-edge: color-mix(in srgb, var(--room) 26%, rgba(255, 244, 228, 0.14));
+  --pane-edge-top: color-mix(in srgb, var(--room) 40%, rgba(255, 248, 236, 0.26));
   --blur: 22px;
   --blur-sm: 12px;
 
-  /* The one colour anything important is allowed to be. */
+  /* The one colour anything important is allowed to be. Follows the room all
+     the way down, which is what you want on a pane edge. */
   --warm: color-mix(in srgb, var(--room) 72%, #ffd9a6);
   --warm-dim: color-mix(in srgb, var(--room) 40%, rgba(255, 217, 166, 0.14));
+
+  /* The accent, which deliberately does not.
+     --warm following the room is right for an edge and wrong for a control:
+     at 3am the room is a cold blue grey, so --warm is a cold blue grey, and
+     the only filled button on screen vanishes at exactly the hour the frame
+     is darkest. --accent keeps three-quarters of its own amber whatever the
+     light is doing, so there is always one thing that is unmistakably the
+     loudest in the frame — and one is the right number. */
+  --accent: color-mix(in srgb, var(--room) 26%, #ffae4e);
+  --accent-ink: #19100a;
+  --accent-dim: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-rule: color-mix(in srgb, var(--accent) 62%, transparent);
+  --accent-glow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 8px 30px color-mix(in srgb, var(--accent) 30%, transparent);
 
   /* Space ---------------------------------------------------------------- */
   --s1: 4px;
@@ -67,23 +88,36 @@
     sans-serif;
 
   --t-micro: 10.5px;
-  --t-label: 12px;
+  --t-label: 11.5px;
   --t-body: 14.5px;
   --t-lead: clamp(15px, 1.15vw, 17px);
-  --t-title: clamp(21px, 2.1vw, 28px);
-  --t-mark: clamp(16px, 1.75vw, 21px);
+  --t-title: clamp(22px, 2.3vw, 31px);
 
+  /* The wordmark was 16-21px, which is a caption. A barn on an empty plain is
+     a wide, quiet, horizontal picture and a small label in the corner of it
+     reads as a watermark rather than a name. These are set so the mark is the
+     second thing in the frame after the room itself. */
+  --t-mark: clamp(27px, 3.6vw, 46px);
+  --t-display: clamp(34px, 5.4vw, 72px);
+
+  --track-mega: 0.4em;
   --track-wide: 0.26em;
   --track: 0.12em;
 
-  /* Shape ---------------------------------------------------------------- */
+  /* Shape ----------------------------------------------------------------
+     Two radii on purpose, not by accident. Small controls stay pills, which
+     is what a control has looked like for a decade and is instantly readable
+     as pressable. Anything carrying content goes nearly square, because a
+     16px-rounded card reads as an app sheet and this is meant to read as
+     print laid over a photograph. The contrast between the two is itself a
+     signal: round things do, square things say. */
   --r-pill: 999px;
-  --r-pane: 16px;
-  --r-field: 11px;
+  --r-pane: 5px;
+  --r-field: 4px;
 
   /* Lift ----------------------------------------------------------------- */
-  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.28);
-  --lift-2: 0 2px 6px rgba(0, 0, 0, 0.34), 0 18px 48px rgba(0, 0, 0, 0.46);
+  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.36), 0 4px 16px rgba(0, 0, 0, 0.34);
+  --lift-2: 0 2px 8px rgba(0, 0, 0, 0.42), 0 22px 60px rgba(0, 0, 0, 0.56);
 
   /* Motion --------------------------------------------------------------- */
   /* Decelerating hard. Everything in this room settles rather than arrives. */

@@ -323,11 +323,28 @@ export default function App() {
         grinding={isGrinding(order)}
       />
 
+      {/*
+       * The grain and the vignette.
+       *
+       * Both were written for this and then never mounted — the stylesheet
+       * has carried the rules since the first pass with nothing rendering
+       * them. They belong between the room and the chrome: the render is a
+       * photograph, and a photograph has edges that fall off and a surface
+       * that is not perfectly clean. Without them the WebGL frame meets the
+       * window edge at full brightness, which is the single most reliable
+       * tell that you are looking at a canvas rather than at a picture.
+       */}
+      <div className="vignette" aria-hidden />
+      <div className="grain" aria-hidden />
+
       <Arrival ready={ready} />
 
       <header className="sign">
-        <h1>near coffee</h1>
-        <p>a barn on mormon row · open whenever you are</p>
+        <h1>
+          <span>Near</span>
+          <span>Coffee</span>
+        </h1>
+        <p>Mormon Row, Wyoming · open whenever you are</p>
       </header>
 
 
@@ -412,12 +429,21 @@ export default function App() {
        * straight across the saucer.
        */}
       <div className="foot">
-        <div className={`hint ${walked ? 'gone' : ''}`}>drag to look · tap the floor to walk</div>
+        {/* Two wordings, swapped by the stylesheet. The long one does not fit
+            on one line at 390px and a two-line hint pushes the whole foot
+            stack up into the room. */}
+        <div className={`hint ${walked ? 'gone' : ''}`}>
+          <span className="wide-only">drag to look · tap the floor to walk</span>
+          <span className="narrow-only">tap the floor to walk</span>
+        </div>
         <div className="foot-row">
           <div className={`clock ${panelOpen ? 'open' : ''}`}>
         <button className="clock-face" onClick={() => setPanelOpen((v) => !v)} aria-expanded={panelOpen}>
-          {formatHour(hour)} · {daylight.label}
-          {conditions}
+          <span className="clock-time">{formatHour(hour)}</span>
+          <span className="clock-meta">
+            {daylight.label}
+            {conditions}
+          </span>
         </button>
         {panelOpen && (
           <div className="clock-panel">
@@ -462,16 +488,34 @@ export default function App() {
           )}
 
           {menuOpen ? (
-            <ul className="menu">
-              {MENU.map((item) => (
-                <li key={item.id}>
-                  <button onClick={() => orderItem(item)}>
-                    <span>{item.name}</span>
-                    <span className="menu-price">{item.price}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              {/*
+               * A photograph of the morning's bake at the head of the menu.
+               * Loaded lazily and decoded async because it only ever appears
+               * two taps in, and it must not be competing for bandwidth with
+               * the room during the arrival sequence.
+               */}
+              <div className="menu-plate">
+                <img
+                  src={`${import.meta.env.BASE_URL}img/pastries.jpg`}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span className="menu-plate-label">out of the oven</span>
+              </div>
+              <ul className="menu">
+                {MENU.map((item, i) => (
+                  <li key={item.id}>
+                    <button onClick={() => orderItem(item)}>
+                      <span className="menu-no">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="menu-name">{item.name}</span>
+                      <span className="menu-price">${item.price}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
             <div className="seat-actions">
               <button

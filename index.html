@@ -6,6 +6,32 @@
     <title>Near Coffee</title>
     <meta name="description" content="A converted homestead barn on Mormon Row, below the Tetons. Open whenever you are." />
     <meta name="theme-color" content="#1a1310" />
+
+    <!--
+      The arrival still is the first frame anyone sees and is rendered by
+      React, so without this the browser does not learn it exists until the
+      bundle has parsed and mounted. Preloaded with the same `imagesrcset` the
+      <img> carries, or the phone would fetch the 960px file and then the
+      1920px one. Relative, with no leading slash, because vite.config.ts sets
+      base: './' so this build can sit at /room/ as well as at a root.
+    -->
+    <link
+      rel="preload"
+      as="image"
+      href="img/barn.jpg"
+      imagesrcset="img/barn-sm.jpg 960w, img/barn.jpg 1920w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
+
+    <meta property="og:title" content="Near Coffee" />
+    <meta property="og:description" content="A converted homestead barn on Mormon Row, below the Tetons. Open whenever you are." />
+    <meta property="og:type" content="website" />
+    <!-- Absolute, because crawlers do not resolve a relative og:image. Update
+         this if the canonical host ever changes. -->
+    <meta property="og:url" content="https://room.nearcoffee.space/" />
+    <meta property="og:image" content="https://room.nearcoffee.space/img/barn.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>

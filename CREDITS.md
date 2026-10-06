@@ -68,6 +68,53 @@ there is no file to license and no provenance to check.
 | Pinned napkins | `src/wall/napkins.ts` |
 | All ambient sound and the radio's synthesised fallback | `src/audio/` |
 
+## Generated images — provenance recorded, licence NOT established
+
+Four images, supplied by the repository owner and committed in `0f935d8`
+("added media"). The full set of sixteen generations sits in `Ai-Images/` at
+the repository root; it is not served and is not part of the build. What is
+served is these:
+
+| Served file | Source generation | Used for |
+| --- | --- | --- |
+| `public/img/barn.jpg`, `public/img/barn-sm.jpg` | `Timber_barn_standing_in_snow_20261005201449.jpg` | The arrival screen, and the `og:image` |
+| `public/textures/sign/near-coffee.jpg` | `Painted_wooden_coffee_sign_20261005201519.jpg` | The board hanging off the porch beam |
+| `public/textures/jute/jute.jpg` | `Coarse_jute_hessian_sacking_texture_20261005201537.jpg` | The sacks of green coffee behind the counter |
+| `public/img/pastries.jpg` | `Bakery_goods_on_wooden_board_20261005201453.jpg` | The head of the menu on the seated card |
+
+Each was cropped, resized, compressed and — for the pastries — graded, from
+the 1376 × 768 original. Nothing else was changed.
+
+**These are not CC0 and this file does not claim they are.** Read the
+paragraph under *Video* below: it was written before any generated asset
+existed here and it applies to these in full. Specifically, still open:
+
+- **Which tool produced them, under which account, on which tier.** The
+  filenames and timestamps are all this repository records, and the terms that
+  decide whether these can be used commercially are the terms of that account
+  at the time of generation, not a property of the files.
+- **Whether the output terms permit commercial use.** Several providers grant
+  commercial rights on paid tiers only, and some assert no copyright in the
+  output at all — which is not the same as granting you one.
+- **Whether the files carry invisible provenance watermarking.** Several
+  providers apply it by default. Re-encoding, as done here, does not reliably
+  remove it and is not an attempt to.
+- **Whether a generated image of a real, identifiable place** — these are
+  recognisably the Moulton barns on Mormon Row — raises anything beyond
+  copyright. The Teton photograph in the section above is public domain
+  precisely because its provenance was checked; these have not been.
+
+None of that was checkable from the environment this work was done in: the
+egress policy blocks nearly every host, so no terms were read. The images are
+in use because the owner supplied them for that purpose; the licence question
+is recorded here, unresolved, and is the owner's to close before this trades.
+
+If the answer turns out to be no, the swap is small and local: the sign falls
+back to `signTexture()` in `src/wall/sign.ts`, which still exists and still
+works; the sacks fall back to a flat material; the arrival screen falls back to
+the warm-doorway gradient it had before. Only the pastry band has no
+substitute, and it can simply be dropped.
+
 ## Video, if any is ever added
 
 `public/video/` is empty of clips and the site is built and tested that way.

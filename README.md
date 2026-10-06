@@ -70,6 +70,14 @@ page.
 **Things respond.** Pointing at the cup, the radio or the strung bulbs names
 them; the bulbs can be switched on and off.
 
+**It opens on the building from the outside.** The scene starts you *inside*
+the barn, so without an arrival screen nobody ever sees the thing the place is
+named after. The load sits behind a photograph of it in the snow, full bleed,
+with a slow push, the name set large at the same gutter the masthead uses, and
+a progress rule across the foot of the frame. On a portrait phone the picture
+becomes a plate in the middle of the page rather than a cover crop, because
+cropping 16:9 to 9:19.5 leaves you with a photograph of some planks.
+
 **The radio goes around the world.** It starts on a hand-picked house set, and
 "elsewhere" moves to another country — Bangladesh, Japan, Senegal, Iceland —
 playing whatever is actually on air there now. Stations come from Radio
@@ -149,7 +157,9 @@ dummy that is never written, and the real one is a comparison-mode depth
 texture that could not be made to sample correctly from inside a
 post-processing effect on the driver available to check against.
 
-### The photograph
+### The photographs
+
+Two kinds, and the difference matters more than how they look.
 
 "Teton Range Panorama Spring", **National Park Service — public domain**, via
 Wikimedia Commons, in `public/textures/`. NPS photographs are works of the US
@@ -160,6 +170,39 @@ a domain you may one day trade under.
 The left quarter of the frame has a ploughed road and a parked car. Rather than
 re-cut the file, the UVs start past them — the download stays pristine and the
 crop is one constant.
+
+The other four are **generated images supplied by the repository owner**: the
+barn on the arrival screen, the painted board hanging off the porch beam, the
+hessian on the sacks of green coffee, and the morning's bake at the head of the
+menu. They are a real step up on what they replaced — the sign in particular,
+because sign-writing is the one thing in the building a visitor *reads*, and a
+drawn letter has a mathematically clean edge that a loaded brush does not.
+
+**Their licence is not established, and this repository does not claim it is.**
+Everything else here is CC0 or public domain, which is the whole reason this
+can trade under the domain one day; generated output is neither by default.
+`CREDITS.md` records what is open — which tool, which account tier, what output
+terms, whether the files carry provenance watermarking — and what the fallback
+is for each if the answer comes back no. There is a `CREDITS.md` beside each of
+them as well. None of it was checkable from the environment this was built in,
+because the egress policy blocks nearly every host.
+
+### The chrome
+
+The scene is the photograph and the interface is the caption, but the caption
+had become a watermark: a 16px tracked wordmark in the corner of a wide, pale,
+mostly empty picture reads as something the renderer stamped on rather than as
+the name of a place. It is now a lockup — a warm rule, the name stacked and set
+at up to 46px, the location in micro-caps under it — and everything else in the
+interface is built from one token layer in `src/ui/tokens.css`.
+
+Two of those tokens are not constants. `--room-r/g/b` carry the colour of the
+light actually in the barn this second, pushed in from the scene whenever the
+hour moves, and every glass surface mixes a little of it in — so the chrome
+warms at golden hour and goes cold at 3am along with the room behind it.
+`--accent` deliberately does *not* follow the room all the way down: at 3am
+`--warm` is a cold grey, and the one filled control on screen would disappear
+at exactly the hour the frame is darkest.
 
 ### Things that are solved, not guessed
 
