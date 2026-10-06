@@ -1,3 +1,21 @@
+@import './ui/tokens.css';
+
+/* ---------------------------------------------------------------------------
+ * The chrome.
+ *
+ * One rule governs all of it: the scene is the photograph and this is the
+ * caption. Nothing here may compete with the room, and nothing here may be
+ * illegible over it either — which are opposite pressures, and the old
+ * version resolved them by making everything 42% opaque and hoping. That
+ * works at dusk and fails at midday, because a text-shadow cannot save grey
+ * type sitting on a sunlit floorboard.
+ *
+ * So anything carrying words now sits on glass instead: a blurred, slightly
+ * tinted pane that guarantees contrast whatever is behind it, and that takes
+ * its tint from the room's own light so it belongs to the frame. Type can
+ * then be quiet because it does not have to fight.
+ * ------------------------------------------------------------------------ */
+
 *,
 *::before,
 *::after {
@@ -13,8 +31,8 @@ body,
 
 body {
   background: #0b0806;
-  color: #f3e8d8;
-  font-family: ui-serif, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  color: var(--ink);
+  font-family: var(--display);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   overscroll-behavior: none;
@@ -25,7 +43,6 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  transition: background 1.6s linear;
 }
 
 .shop canvas {
@@ -33,44 +50,474 @@ body {
   touch-action: none;
 }
 
-/* Label that appears when you point at something in the barn. */
-.tag {
-  font-family: ui-serif, 'Iowan Old Style', Georgia, serif;
-  font-size: 13px;
-  font-style: italic;
-  letter-spacing: 0.08em;
-  color: #ffeed2;
+/* Surfaces ----------------------------------------------------------------
+ *
+ * `backdrop-filter` is doing the real work. The saturate() alongside the blur
+ * is not decoration: blurring alone greys whatever is behind the pane, and
+ * pushing the saturation back up keeps the room's colour reading through it,
+ * which is the difference between frosted glass and a smear.
+ */
+.pane,
+.seat-panel,
+.clock-panel,
+.wall-form,
+.hint {
+  background: var(--pane);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5);
+  backdrop-filter: blur(var(--blur)) saturate(1.5);
+  border: 1px solid var(--pane-edge);
+  /* A brighter top edge. Every real pane of anything catches the light on its
+     upper lip, and without it a translucent rectangle reads as a hole. */
+  border-top-color: var(--pane-edge-top);
+  border-radius: var(--r-pane);
+  box-shadow: var(--lift-2);
+}
+
+/* Controls ---------------------------------------------------------------- */
+.btn {
+  font-family: var(--ui);
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  background: var(--pane);
+  -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
+  backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
+  border: 1px solid var(--pane-edge);
+  border-top-color: var(--pane-edge-top);
+  border-radius: var(--r-pill);
+  padding: 9px 15px;
+  cursor: pointer;
   white-space: nowrap;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
+  box-shadow: var(--lift-1);
+  transition:
+    color var(--fast) var(--ease-soft),
+    background var(--fast) var(--ease-soft),
+    border-color var(--fast) var(--ease-soft),
+    transform var(--fast) var(--ease);
+}
+
+.btn:hover {
+  color: var(--ink);
+  border-color: var(--pane-edge-top);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--warm);
+  outline-offset: 2px;
+}
+
+/* On. The only filled thing on screen, so it is unambiguous which controls
+   are doing something and which are offering to. */
+.btn.on {
+  color: var(--ink-on-warm);
+  background: var(--warm);
+  border-color: transparent;
+}
+
+.btn.on:hover {
+  color: var(--ink-on-warm);
+}
+
+/* Quiet. Carries no pane at all, so a row of them does not read as a toolbar. */
+.btn.ghost {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--ink-3);
+}
+
+.btn.ghost:hover {
+  color: var(--ink);
+  background: var(--warm-dim);
+}
+
+.btn.icon {
+  padding: 9px 11px;
+}
+
+/* The wordmark ------------------------------------------------------------ */
+.sign {
+  position: absolute;
+  top: var(--edge-t);
+  left: var(--edge-x);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sign h1 {
+  margin: 0;
+  font-size: var(--t-mark);
+  font-weight: 400;
+  letter-spacing: var(--track-wide);
+  color: var(--ink);
+  text-shadow: 0 2px 26px rgba(0, 0, 0, 0.9);
+}
+
+.sign p {
+  margin: var(--s2) 0 0;
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track);
+  color: var(--ink-3);
+  text-transform: uppercase;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.95);
+}
+
+/* Top-right cluster ------------------------------------------------------- */
+.controls {
+  position: absolute;
+  top: var(--edge-t);
+  right: var(--edge-r);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.now-playing {
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  max-width: 30ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: var(--s1);
+}
+
+/* Bottom bar --------------------------------------------------------------
+ *
+ * One row, centred, holding the clock and whatever else belongs at the foot
+ * of the frame. Previously the clock, the hint and the note counter were
+ * three absolutely-positioned things that happened to end up near each other
+ * and overlapped the cup at this aspect ratio.
+ */
+.foot {
+  position: absolute;
+  left: 50%;
+  bottom: var(--edge-b);
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  width: min(620px, calc(100vw - var(--edge-x) - var(--edge-r)));
 }
 
 .hint {
-  position: absolute;
-  bottom: clamp(58px, 9vh, 84px);
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: lowercase;
-  opacity: 0.42;
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--ink-3);
   pointer-events: none;
-  transition: opacity 1s ease;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+  padding: 6px 13px;
+  border-radius: var(--r-pill);
+  transition: opacity var(--slow) var(--ease-soft);
 }
 
 .hint.gone {
   opacity: 0;
 }
 
-/*
- * Film grain. Static rather than animated — moving grain reads as video
- * noise, and this room should feel like a photograph someone took.
+.foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+/* Where you are, when you are ---------------------------------------------- */
+.clock {
+  display: flex;
+  align-items: center;
+}
+
+.clock-face {
+  font-family: var(--ui);
+  font-size: var(--t-label);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  background: var(--pane);
+  -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
+  backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
+  border: 1px solid var(--pane-edge);
+  border-top-color: var(--pane-edge-top);
+  border-radius: var(--r-pill);
+  padding: 9px 16px;
+  cursor: pointer;
+  box-shadow: var(--lift-1);
+  transition: color var(--fast) var(--ease-soft);
+}
+
+.clock-face:hover {
+  color: var(--ink);
+}
+
+.clock-panel {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  margin-top: var(--s2);
+  animation: rise var(--mid) var(--ease) both;
+}
+
+.clock-panel input[type='range'] {
+  width: clamp(120px, 24vw, 200px);
+  accent-color: var(--warm);
+}
+
+.station {
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--slow) var(--ease-soft);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+}
+
+.station.shown {
+  opacity: 1;
+}
+
+/* The napkin wall ---------------------------------------------------------- */
+.wall {
+  position: absolute;
+  left: var(--edge-x);
+  bottom: var(--edge-b);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  max-width: min(360px, 60vw);
+}
+
+.wall-form {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  animation: rise var(--mid) var(--ease) both;
+}
+
+.wall-form input {
+  font-family: var(--display);
+  font-size: var(--t-body);
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid transparent;
+  border-radius: var(--r-field);
+  padding: 9px 12px;
+  width: clamp(150px, 34vw, 230px);
+  transition: border-color var(--fast) var(--ease-soft);
+}
+
+.wall-form input:focus {
+  outline: none;
+  border-color: var(--warm);
+}
+
+.wall-form input::placeholder {
+  color: var(--ink-4);
+}
+
+.wall-count {
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-4);
+  min-width: 2ch;
+  text-align: right;
+}
+
+.wall-note {
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+  color: var(--ink-4);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+  padding-left: var(--s2);
+}
+
+.shop[data-seated='true'] .presence-note {
+  display: none;
+}
+
+.presence-note {
+  position: absolute;
+  right: var(--edge-r);
+  bottom: var(--edge-b);
+  z-index: 10;
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+  color: var(--ink-4);
+  text-align: right;
+  max-width: 34vw;
+  pointer-events: none;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+
+.place-note {
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  color: var(--ink-4);
+}
+
+/* Seated ------------------------------------------------------------------
+ *
+ * A card, not a wall. The old one was a flat slab pinned to the bottom of a
+ * phone and it took 40% of the screen — which is 40% of the reason anyone
+ * came. It is narrower now, it floats clear of the edges, and on a phone it
+ * stops well short of half.
  */
+.seat-panel {
+  position: absolute;
+  right: var(--edge-r);
+  bottom: var(--edge-b);
+  z-index: 20;
+  width: min(380px, calc(100vw - var(--edge-x) - var(--edge-r)));
+  padding: var(--s5);
+  animation: rise var(--slow) var(--ease) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.seat-kicker {
+  display: block;
+  font-family: var(--ui);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--warm);
+}
+
+.seat-panel h2 {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-title);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.seat-panel p {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-lead);
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+
+.order-status {
+  margin-top: var(--s4) !important;
+  font-family: var(--ui);
+  font-size: var(--t-label) !important;
+  letter-spacing: 0.03em;
+  color: var(--ink-3) !important;
+}
+
+.order-status.done {
+  color: var(--warm) !important;
+}
+
+.seat-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+/* The menu ---------------------------------------------------------------- */
+.menu {
+  list-style: none;
+  margin: var(--s4) 0 0;
+  padding: 0;
+}
+
+.menu li + li {
+  border-top: 1px solid var(--pane-edge);
+}
+
+.menu button {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s3) var(--s2);
+  background: none;
+  border: 0;
+  border-radius: var(--r-field);
+  font-family: var(--display);
+  font-size: var(--t-body);
+  color: var(--ink-2);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background var(--fast) var(--ease-soft),
+    color var(--fast) var(--ease-soft);
+}
+
+.menu button:hover {
+  background: var(--warm-dim);
+  color: var(--ink);
+}
+
+.menu-price {
+  font-family: var(--ui);
+  font-size: var(--t-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-4);
+}
+
+/* Hover labels in the room ------------------------------------------------- */
+.tag {
+  font-family: var(--ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  white-space: nowrap;
+  padding: 5px 10px;
+  background: rgba(10, 8, 6, 0.74);
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid var(--pane-edge);
+  border-radius: var(--r-pill);
+  box-shadow: var(--lift-1);
+}
+
+/* Over the top of everything ----------------------------------------------- */
 .grain {
   position: absolute;
   inset: -20%;
   pointer-events: none;
-  opacity: 0.11;
+  opacity: 0.09;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -81,388 +528,64 @@ body {
   pointer-events: none;
   background: radial-gradient(
     ellipse 82% 74% at 50% 44%,
-    rgba(0, 0, 0, 0) 46%,
-    rgba(0, 0, 0, 0.3) 80%,
-    rgba(0, 0, 0, 0.6) 100%
+    rgba(0, 0, 0, 0) 48%,
+    rgba(0, 0, 0, 0.26) 80%,
+    rgba(0, 0, 0, 0.56) 100%
   );
 }
 
-.sign {
-  position: absolute;
-  top: clamp(18px, 3.4vh, 34px);
-  left: clamp(20px, 3.4vw, 44px);
-  pointer-events: none;
-}
-
-.sign h1 {
-  margin: 0;
-  font-size: clamp(17px, 1.9vw, 23px);
-  font-weight: 400;
-  letter-spacing: 0.3em;
-  color: #f7e4c6;
-  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.85);
-}
-
-.sign p {
-  margin: 0.75em 0 0;
-  font-size: clamp(10px, 1.05vw, 12px);
-  letter-spacing: 0.16em;
-  opacity: 0.45;
-  font-style: italic;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-
-.clock {
-  position: absolute;
-  bottom: clamp(14px, 3vh, 26px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.clock-face,
-.clock-reset {
-  font-family: inherit;
-  background: rgba(12, 8, 6, 0.42);
-  border: 1px solid rgba(255, 226, 186, 0.18);
-  color: #f6e5cd;
-  padding: 7px 16px;
-  border-radius: 999px;
-  font-size: 12px;
-  letter-spacing: 0.11em;
-  cursor: pointer;
-  backdrop-filter: blur(7px);
-  opacity: 0.5;
-  transition: opacity 0.35s ease, border-color 0.35s ease;
-}
-
-.clock-face:hover,
-.clock-reset:hover,
-.clock.open .clock-face {
-  opacity: 1;
-  border-color: rgba(255, 226, 186, 0.4);
-}
-
-.clock-panel {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  order: -1;
-  background: rgba(12, 8, 6, 0.5);
-  border: 1px solid rgba(255, 226, 186, 0.16);
-  border-radius: 999px;
-  padding: 9px 16px;
-  backdrop-filter: blur(7px);
-}
-
-.clock-panel input[type='range'] {
-  width: clamp(160px, 34vw, 320px);
-  accent-color: #ffb347;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* Live conditions at the barn, kept quiet in the corner. */
-.place-note {
-  position: absolute;
-  bottom: clamp(12px, 2.4vh, 22px);
-  right: clamp(16px, 3vw, 34px);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: lowercase;
-  opacity: 0.34;
-  pointer-events: none;
-  text-align: right;
-  max-width: 46vw;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-
-@media (max-width: 640px) {
-  .place-note {
+/* Phones ------------------------------------------------------------------
+ *
+ * The scene is the product, so the chrome gives way rather than stacking up.
+ * The seated card becomes a sheet at the foot of the screen but is capped at
+ * 46vh, the wall form moves above it, and the strapline goes — on a 390px
+ * screen it was wrapping into the controls.
+ */
+@media (max-width: 720px) {
+  .sign p {
     display: none;
   }
-}
 
-/* Sound controls. Deliberately dull-looking: nothing here should compete
-   with the café, and nothing plays until you ask it to. */
-.audio {
-  position: absolute;
-  top: clamp(16px, 3vh, 30px);
-  right: clamp(16px, 3vw, 34px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  max-width: 60vw;
-}
+  .now-playing {
+    display: none;
+  }
 
-.audio-btn {
-  font-family: inherit;
-  background: rgba(12, 8, 6, 0.42);
-  border: 1px solid rgba(255, 226, 186, 0.16);
-  color: #f6e5cd;
-  padding: 6px 13px;
-  border-radius: 999px;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  cursor: pointer;
-  backdrop-filter: blur(7px);
-  opacity: 0.45;
-  transition: opacity 0.3s ease, border-color 0.3s ease;
-}
+  .seat-panel {
+    left: var(--edge-x);
+    right: var(--edge-r);
+    width: auto;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding: var(--s4) var(--s4) var(--s5);
+  }
 
-.audio-btn:hover {
-  opacity: 1;
-}
+  .seat-panel p {
+    font-size: var(--t-body);
+    line-height: 1.55;
+  }
 
-.audio-btn.on {
-  opacity: 1;
-  border-color: rgba(255, 179, 71, 0.55);
-  color: #ffd9a0;
-}
-
-.audio-btn.ghost {
-  background: none;
-  border-color: rgba(255, 226, 186, 0.1);
-}
-
-.audio-now {
-  font-size: 10px;
-  font-style: italic;
-  letter-spacing: 0.1em;
-  opacity: 0.5;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
-}
-
-/* The napkin wall control. Bottom-left, out of the way of the clock. */
-.wall {
-  position: absolute;
-  bottom: clamp(12px, 2.4vh, 22px);
-  left: clamp(16px, 3vw, 34px);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  max-width: min(92vw, 520px);
-}
-
-.wall-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  background: rgba(12, 8, 6, 0.5);
-  border: 1px solid rgba(255, 226, 186, 0.16);
-  border-radius: 999px;
-  padding: 7px 10px 7px 16px;
-  backdrop-filter: blur(7px);
-}
-
-.wall-form input {
-  font-family: inherit;
-  font-size: 13px;
-  font-style: italic;
-  letter-spacing: 0.04em;
-  background: none;
-  border: none;
-  outline: none;
-  color: #f6e5cd;
-  width: min(46vw, 250px);
-}
-
-.wall-form input::placeholder {
-  color: rgba(246, 229, 205, 0.35);
-}
-
-.wall-count {
-  font-size: 10px;
-  opacity: 0.35;
-  min-width: 2ch;
-  text-align: right;
-}
-
-.wall-note {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: lowercase;
-  opacity: 0.34;
-  pointer-events: none;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-
-/* Who else is here. Sits just above the conditions line. */
-.presence-note {
-  position: absolute;
-  bottom: calc(clamp(12px, 2.4vh, 22px) + 16px);
-  right: clamp(16px, 3vw, 34px);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: lowercase;
-  opacity: 0.34;
-  pointer-events: none;
-  text-align: right;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
-}
-
-@media (max-width: 640px) {
   .presence-note {
     display: none;
   }
-}
 
-/* Where you are standing. Appears once you start walking, not before. */
-.station {
-  position: absolute;
-  bottom: clamp(58px, 9vh, 84px);
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  text-transform: lowercase;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s ease;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
-}
+  .wall {
+    max-width: calc(100vw - var(--edge-x) - var(--edge-r));
+  }
 
-.station.shown {
-  opacity: 0.5;
-}
-
-/*
- * Sitting down.
- *
- * The panel is the only thing in the overlay that takes a corner to itself, and
- * it earns it — while you are seated it is the whole interface. Same chip
- * treatment as everything else so it reads as part of the room's furniture
- * rather than a modal dropped on top: the blur, the gold hairline, the deep
- * text shadow the pale type needs against snow.
- */
-.seat-panel {
-  position: fixed;
-  right: 34px;
-  bottom: 34px;
-  width: min(370px, calc(100vw - 68px));
-  padding: 26px 28px 24px;
-  background: rgba(18, 13, 10, 0.82);
-  backdrop-filter: blur(18px);
-  border: 1px solid rgba(184, 147, 90, 0.16);
-  border-radius: 3px;
-  z-index: 10;
-  animation: seat-in 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes seat-in {
-  from { opacity: 0; transform: translateX(24px); }
-  to { opacity: 1; transform: none; }
-}
-
-.seat-kicker {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 9.5px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: #b8935a;
-}
-
-.seat-panel h2 {
-  margin: 10px 0 12px;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 400;
-  font-size: 25px;
-  color: #f0e8dc;
-}
-
-.seat-panel p {
-  margin: 0 0 16px;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-weight: 300;
-  font-size: 13px;
-  line-height: 1.9;
-  color: rgba(240, 232, 220, 0.8);
-}
-
-/*
- * The status line holds its own height whether or not there is text in it. The
- * ordering sequence ends on an empty line before the arrival message lands, and
- * without a reserved row the whole panel jumps at the moment the coffee
- * arrives — which is the one moment it should be still.
- */
-.order-status {
-  min-height: 1.9em;
-  color: rgba(196, 168, 130, 0.95) !important;
-  font-style: italic;
-}
-
-.order-status.done {
-  color: #c4a882 !important;
-  font-style: normal;
-}
-
-.seat-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.menu {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-}
-
-.menu li + li {
-  border-top: 1px solid rgba(184, 147, 90, 0.12);
-}
-
-.menu button {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  width: 100%;
-  padding: 9px 2px;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 14.5px;
-  letter-spacing: 0.04em;
-  color: rgba(240, 232, 220, 0.88);
-  text-align: left;
-  transition: color 0.18s, padding-left 0.18s;
-}
-
-.menu button:hover {
-  color: #f0e8dc;
-  padding-left: 8px;
-}
-
-.menu-price {
-  color: rgba(184, 147, 90, 0.8);
-  font-size: 12.5px;
-}
-
-@media (max-width: 720px) {
-  .seat-panel {
-    right: 16px;
-    left: 16px;
-    bottom: 16px;
-    width: auto;
-    padding: 20px 20px 18px;
+  .foot {
+    gap: var(--s2);
   }
 }
 
+/* When the seated card is up on a phone it owns the bottom of the screen, so
+   everything else that lives there gets out of the way rather than peeking
+   out from under it. */
+@media (max-width: 720px) {
+  .shop[data-seated='true'] .wall,
+  .shop[data-seated='true'] .foot {
+    display: none;
+  }
+}
 /* ---------------------------------------------------------------------------
  * Arrival: the screen between opening the page and the barn being ready.
  * See src/ui/Arrival.tsx.

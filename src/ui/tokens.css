@@ -1,0 +1,103 @@
+/* ---------------------------------------------------------------------------
+ * Tokens.
+ *
+ * The chrome used to be a pile of one-off `clamp()` calls and hand-mixed
+ * rgba, which is why nothing lined up with anything: the wordmark, the
+ * controls and the bottom-left note all landed at different sizes, different
+ * opacities and different distances from their edges, each chosen on its own.
+ * Everything below this line is now spent from one of these.
+ *
+ * Two of them are not constants. `--room-r/g/b` carry the colour of the light
+ * actually in the barn this second, pushed in from the scene every time the
+ * hour moves — see `onLight` in Scene.tsx. Every glass surface mixes a little
+ * of it in, so the UI warms at golden hour and goes cold and blue at 3am
+ * along with the room behind it. That is the whole reason the chrome can sit
+ * on top of a photoreal render without looking stuck to the glass.
+ * ------------------------------------------------------------------------ */
+
+:root {
+  /* Overwritten at runtime. These are golden hour, so the first paint is warm
+     rather than grey while the scene works out what time it is. */
+  --room-r: 198;
+  --room-g: 150;
+  --room-b: 96;
+  --room: rgb(var(--room-r), var(--room-g), var(--room-b));
+
+  /* Ink ------------------------------------------------------------------ */
+  --ink: #f6ece0;
+  --ink-2: rgba(246, 236, 224, 0.72);
+  --ink-3: rgba(246, 236, 224, 0.46);
+  --ink-4: rgba(246, 236, 224, 0.26);
+  --ink-on-warm: #1a120b;
+
+  /* Glass ---------------------------------------------------------------- */
+  --pane: color-mix(in srgb, var(--room) 10%, rgba(14, 11, 9, 0.56));
+  --pane-high: color-mix(in srgb, var(--room) 14%, rgba(18, 14, 11, 0.7));
+  --pane-edge: color-mix(in srgb, var(--room) 24%, rgba(255, 244, 228, 0.1));
+  --pane-edge-top: color-mix(in srgb, var(--room) 34%, rgba(255, 248, 236, 0.16));
+  --blur: 22px;
+  --blur-sm: 12px;
+
+  /* The one colour anything important is allowed to be. */
+  --warm: color-mix(in srgb, var(--room) 72%, #ffd9a6);
+  --warm-dim: color-mix(in srgb, var(--room) 40%, rgba(255, 217, 166, 0.14));
+
+  /* Space ---------------------------------------------------------------- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* Distance from the edge of the window. Scales, and respects a notch. */
+  --gutter: clamp(16px, 2.6vw, 40px);
+  --edge-x: max(var(--gutter), env(safe-area-inset-left));
+  --edge-r: max(var(--gutter), env(safe-area-inset-right));
+  --edge-t: max(var(--gutter), env(safe-area-inset-top));
+  --edge-b: max(var(--gutter), env(safe-area-inset-bottom));
+
+  /* Type ----------------------------------------------------------------- */
+  --display: ui-serif, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  /* A tight system sans for anything that is a control rather than a voice.
+     No webfont: the scene already spends the network budget, and a UI label
+     that arrives 400ms late is worse than one that is not quite bespoke. */
+  --ui: ui-sans-serif, -apple-system, 'SF Pro Text', 'Segoe UI', Inter, system-ui,
+    sans-serif;
+
+  --t-micro: 10.5px;
+  --t-label: 12px;
+  --t-body: 14.5px;
+  --t-lead: clamp(15px, 1.15vw, 17px);
+  --t-title: clamp(21px, 2.1vw, 28px);
+  --t-mark: clamp(16px, 1.75vw, 21px);
+
+  --track-wide: 0.26em;
+  --track: 0.12em;
+
+  /* Shape ---------------------------------------------------------------- */
+  --r-pill: 999px;
+  --r-pane: 16px;
+  --r-field: 11px;
+
+  /* Lift ----------------------------------------------------------------- */
+  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.28);
+  --lift-2: 0 2px 6px rgba(0, 0, 0, 0.34), 0 18px 48px rgba(0, 0, 0, 0.46);
+
+  /* Motion --------------------------------------------------------------- */
+  /* Decelerating hard. Everything in this room settles rather than arrives. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --fast: 160ms;
+  --mid: 300ms;
+  --slow: 620ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fast: 1ms;
+    --mid: 1ms;
+    --slow: 1ms;
+  }
+}

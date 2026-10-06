@@ -227,6 +227,7 @@ export function Scene({
   onStation,
   onProgress,
   onReady,
+  onLight,
   seat,
   seatIndex,
   onSit,
@@ -245,6 +246,8 @@ export function Scene({
   onStation?: (label: string) => void
   onProgress?: (p: number) => void
   onReady?: () => void
+  /** The colour of the light in the room, so the chrome can be tinted by it. */
+  onLight?: (c: THREE.Color) => void
   seat?: Seat | null
   seatIndex: number | null
   onSit: (i: number) => void
@@ -257,6 +260,21 @@ export function Scene({
     () => sceneLight(hour, daylight, solar, weather),
     [hour, daylight, solar, weather],
   )
+
+  /*
+   * Hand the room's own colour out to the DOM.
+   *
+   * The chrome is HTML, which is the right call — see the note in styles.css
+   * — but HTML laid over a photoreal render looks laid over it, because the
+   * render changes colour all day and the UI does not. Feeding the scene's
+   * ambient out lets every glass surface mix a little of the actual light in,
+   * so the panes warm at golden hour and go blue at 3am along with everything
+   * behind them. It is one colour and one effect, and it does more for making
+   * the UI belong than any amount of blur.
+   */
+  useEffect(() => {
+    onLight?.(light.fogColor)
+  }, [light, onLight])
 
   return (
     <Canvas

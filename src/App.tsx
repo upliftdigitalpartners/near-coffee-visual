@@ -15,6 +15,7 @@ import {
 import { createPresence, type Peer } from './presence/presence'
 import { fetchBake, type Bake } from './wall/bake'
 import { SEATS } from './scene/seats'
+import * as THREE from 'three'
 import { Arrival } from './ui/Arrival'
 import {
   MENU,
@@ -266,12 +267,29 @@ export default function App() {
 
   const daylight = useMemo(() => daylightAt(hour, place.solar), [hour, place.solar])
 
+  /*
+   * The room's light, pushed into CSS custom properties for the chrome.
+   *
+   * Written straight onto documentElement rather than held in React state on
+   * purpose: this changes every time the hour moves, and re-rendering the
+   * whole app to repaint a border colour would be absurd. Lifted well clear
+   * of black first — fogColor at 3am is almost nothing, and a pane tinted
+   * with nothing is a pane tinted grey.
+   */
+  const onLight = useCallback((c: THREE.Color) => {
+    const lift = (v: number) => Math.round(Math.min(1, v * 0.55 + 0.3) * 255)
+    const el = document.documentElement
+    el.style.setProperty('--room-r', String(lift(c.r)))
+    el.style.setProperty('--room-g', String(lift(c.g)))
+    el.style.setProperty('--room-b', String(lift(c.b)))
+  }, [])
+
   const conditions = place.weather
     ? ` · ${Math.round(place.weather.temperatureC)}°C ${place.weather.label}`
     : ''
 
   return (
-    <main className="shop">
+    <main className="shop" data-seated={seatIndex !== null}>
       <Scene
         hour={hour}
         daylight={daylight}
@@ -284,6 +302,7 @@ export default function App() {
         bake={bake}
         onStation={setStation}
         onReady={() => setReady(true)}
+        onLight={onLight}
         onProgress={(p) => {
           if (p > 0.04 && !walked) setWalked(true)
         }}
@@ -311,8 +330,6 @@ export default function App() {
         <p>a barn on mormon row · open whenever you are</p>
       </header>
 
-      <div className={`hint ${walked ? 'gone' : ''}`}>drag to look · tap the floor to walk</div>
-      <div className={`station ${walked ? 'shown' : ''}`}>{station}</div>
 
       <div className="wall">
         {writing ? (
@@ -330,15 +347,15 @@ export default function App() {
               aria-label="Write a note for the wall"
             />
             <span className="wall-count">{MAX_LENGTH - draft.length}</span>
-            <button className="audio-btn on" onClick={() => void pin()}>
+            <button className="btn on" onClick={() => void pin()}>
               pin it
             </button>
-            <button className="audio-btn ghost" onClick={() => setWriting(false)}>
+            <button className="btn ghost" onClick={() => setWriting(false)}>
               never mind
             </button>
           </div>
         ) : (
-          <button className="audio-btn" onClick={() => setWriting(true)}>
+          <button className="btn" onClick={() => setWriting(true)}>
             leave a note
           </button>
         )}
@@ -351,9 +368,9 @@ export default function App() {
         </span>
       </div>
 
-      <div className="audio">
+      <div className="controls">
         <button
-          className={`audio-btn ${soundOn ? 'on' : ''}`}
+          className={`btn ${soundOn ? 'on' : ''}`}
           onClick={toggleSound}
           aria-pressed={soundOn}
           title={soundOn ? 'silence the café' : 'listen to the café'}
@@ -361,7 +378,7 @@ export default function App() {
           {soundOn ? 'sound on' : 'sound off'}
         </button>
         <button
-          className={`audio-btn ${radioState.playing ? 'on' : ''}`}
+          className={`btn ${radioState.playing ? 'on' : ''}`}
           onClick={toggleRadio}
           aria-pressed={radioState.playing}
         >
@@ -369,16 +386,16 @@ export default function App() {
         </button>
         {(radioState.playing || radioState.error) && (
           <>
-            <button className="audio-btn ghost" onClick={nextPlace} title="somewhere else in the world">
+            <button className="btn ghost" onClick={nextPlace} title="somewhere else in the world">
               elsewhere
             </button>
-            <button className="audio-btn ghost" onClick={nextStation} title="another station here">
+            <button className="btn ghost" onClick={nextStation} title="another station here">
               next
             </button>
           </>
         )}
         {(radioState.playing || radioState.loading || radioState.error) && (
-          <span className="audio-now">
+          <span className="now-playing">
             {radioState.error
               ? `${radioState.place ?? ''} — ${radioState.error}`
               : radioState.playing
@@ -388,7 +405,16 @@ export default function App() {
         )}
       </div>
 
-      <div className={`clock ${panelOpen ? 'open' : ''}`}>
+      {/*
+       * One stack at the foot of the frame. The hint, the clock and the
+       * station label used to be three separately-positioned elements that
+       * happened to land near each other, and at 1440x900 they printed
+       * straight across the saucer.
+       */}
+      <div className="foot">
+        <div className={`hint ${walked ? 'gone' : ''}`}>drag to look · tap the floor to walk</div>
+        <div className="foot-row">
+          <div className={`clock ${panelOpen ? 'open' : ''}`}>
         <button className="clock-face" onClick={() => setPanelOpen((v) => !v)} aria-expanded={panelOpen}>
           {formatHour(hour)} · {daylight.label}
           {conditions}
@@ -408,7 +434,7 @@ export default function App() {
               aria-label="Time of day"
             />
             <button
-              className="clock-reset"
+              className="btn ghost"
               onClick={() => {
                 setScrubbing(false)
                 setHour(localHour())
@@ -418,6 +444,9 @@ export default function App() {
             </button>
           </div>
         )}
+          </div>
+        </div>
+        <div className={`station ${walked ? 'shown' : ''}`}>{station}</div>
       </div>
 
       {seatIndex !== null && (
@@ -446,20 +475,20 @@ export default function App() {
           ) : (
             <div className="seat-actions">
               <button
-                className="audio-btn on"
+                className="btn on"
                 onClick={() => setMenuOpen(true)}
                 disabled={!!order && !order.done}
               >
                 {order && !order.done ? 'coming up…' : 'order something'}
               </button>
-              <button className="audio-btn ghost" onClick={stand}>
+              <button className="btn ghost" onClick={stand}>
                 stand up
               </button>
             </div>
           )}
 
           {menuOpen && (
-            <button className="audio-btn ghost" onClick={() => setMenuOpen(false)}>
+            <button className="btn ghost" onClick={() => setMenuOpen(false)}>
               never mind
             </button>
           )}
