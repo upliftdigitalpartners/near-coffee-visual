@@ -212,20 +212,54 @@ because the egress policy blocks nearly every host.
 
 ### The chrome
 
-The scene is the photograph and the interface is the caption, but the caption
-had become a watermark: a 16px tracked wordmark in the corner of a wide, pale,
-mostly empty picture reads as something the renderer stamped on rather than as
-the name of a place. It is now a lockup — a warm rule, the name stacked and set
-at up to 46px, the location in micro-caps under it — and everything else in the
-interface is built from one token layer in `src/ui/tokens.css`.
+One wordmark and one bar. That is the whole interface when you are standing in
+the room, and getting there was mostly deletion.
 
-Two of those tokens are not constants. `--room-r/g/b` carry the colour of the
-light actually in the barn this second, pushed in from the scene whenever the
-hour moves, and every glass surface mixes a little of it in — so the chrome
-warms at golden hour and goes cold at 3am along with the room behind it.
-`--accent` deliberately does *not* follow the room all the way down: at 3am
-`--warm` is a cold grey, and the one filled control on screen would disappear
-at exactly the hour the frame is darkest.
+It had been seven separately-positioned things around the edge of the frame —
+the wordmark, two control pills top right, a hint pill sitting on top of a
+clock pill at the bottom, a note button bottom left with a counter wrapping
+underneath it, and a presence line bottom right. Nothing was wrong with any one
+of them. Together they were confetti laid round a photograph: six shapes, four
+alignments, no relationship between any two. Everything that is a control or a
+status now lives in one container at the foot of the frame, and the two things
+that expand — the time scrubber and the note field — open *inside* it, so the
+chrome is one object that occasionally grows rather than a set that
+occasionally multiplies.
+
+Five quiet status lines were on screen at once as well: the hint, where you
+were standing, what the radio was playing, how many notes were on the wall, and
+whether anyone else was here. They are all the same kind of thing — one
+sentence about what is true right now — so they share a single slot, and the
+only real design work is the priority order. See `status` in `App.tsx`.
+
+Three rules hold the rest of it together, and they are rules rather than
+preferences because the previous pass had none and spent everything:
+
+- **One accent, one meaning.** Amber means *live*: a control that is currently
+  on, the focus ring, and the moment an order is ready. It had reached
+  twenty-nine uses — a pulsing dot, a gradient hairline on every pane, the
+  clock numerals, the strapline — at which point it was not an accent, it was
+  the house colour, and nothing could be emphatic because everything was.
+- **Two type treatments.** Serif for the two things that are a voice: the
+  wordmark and the name of where you are sitting. Sans for everything that is
+  a control or a label. Uppercase is reserved for buttons, because when every
+  label is tracked micro-caps they all shout at the same volume.
+- **One shape family.** Rounded rectangles, two related radii. The old mix of
+  999px pills against 5px cards read as two designs sharing a screen.
+
+Anything carrying words still sits on blurred glass, which was always right: it
+guarantees contrast whatever is behind it. Two of its tokens are not constants.
+`--room-r/g/b` carry the colour of the light actually in the barn this second,
+pushed in from the scene whenever the hour moves, and every glass surface mixes
+a little of it in — so the chrome warms at golden hour and goes cold at 3am
+along with the room behind it. `--live` deliberately does *not* follow the room
+all the way down: at 3am a room-derived accent is a cold blue grey, and the one
+control that is on would vanish at exactly the hour the frame is darkest.
+
+Chrome is iterated against `scratchpad/harness/`, a static page that loads the
+built stylesheet over a stand-in gradient. The real scene takes fifty seconds
+to reach first paint under a software rasteriser, which is a bad feedback loop
+for deciding where a divider goes.
 
 ### Things that are solved, not guessed
 

@@ -39,16 +39,25 @@ See `src/ui/Arrival.tsx`.
 
 | | |
 | --- | --- |
-| Size | 1280 × 720 is plenty. It sits at 62% opacity behind type |
+| Size | 1280 × 720 is plenty. It dissolves in over the still at 86% |
 | Length | 4–8 seconds, seamless loop |
-| Subject | The barn from outside, or the valley. Slow push or a locked-off shot |
+| Subject | The barn from outside, in snow. Slow push or a locked-off shot |
 | Motion | **Slow.** This plays while someone waits; fast motion makes the wait feel longer |
-| Composition | Keep the centre quiet — the wordmark and the progress rule sit there |
+| Composition | Keep the **top left** quiet — the wordmark sits there — and the bottom 60px, which is the progress rule. The centre is free; it was not when this was first written, and the note has been corrected |
+| Grade | Don't. The grade is applied in CSS per sky, so a clip that arrives pre-graded gets it twice |
 | Codec | H.264 MP4, no audio |
 | Weight | Under 1.5MB. It competes for bandwidth with the scene it is covering |
 
 A long or heavy clip is self-defeating: every byte it takes is a byte the
 barn is not loading, and the screen exists to make the load shorter, not to
 be watched.
+
+There is a still there already, and it is not a placeholder: `src/ui/still.ts`
+picks one of four photographs of the barn on the visitor's local hour, and
+`styles.css` grades each one to match the room it is about to hand over to. A
+clip only earns its place if the motion is worth more than that choice, which
+means it has to work at every hour or be dropped in favour of four of them —
+one per sky — named `arrival-dawn.mp4` and so on. That is not wired up; say so
+and it is a ten-line change to `Arrival.tsx`.
 
 Skipped entirely under `prefers-reduced-motion`.

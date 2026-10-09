@@ -308,6 +308,40 @@ export default function App() {
     ? ` · ${Math.round(place.weather.temperatureC)}°C ${place.weather.label}`
     : ''
 
+  /*
+   * The one status line.
+   *
+   * Five separate quiet lines used to be on screen at once — the hint, the
+   * station label, what the radio was playing, how many notes were on the
+   * wall, and whether anyone else was here — each absolutely positioned in
+   * its own corner with its own type treatment. All five are the same kind of
+   * thing: one sentence about what is true right now. So they share a slot,
+   * and the only real design work is the order.
+   *
+   * It runs most-transient first. Feedback from an action you just took beats
+   * everything, because you are looking for it. The instruction comes next and
+   * only until you have moved, after which it is noise. Then the radio, which
+   * you turned on deliberately and want to see the result of. Then where you
+   * are, once you have walked somewhere, and failing all of that, who else is
+   * in the room.
+   */
+  const status =
+    wallNote ||
+    (!walked ? 'drag to look · tap the floor to walk' : '') ||
+    (radioState.error
+      ? `${radioState.place ?? ''} — ${radioState.error}`
+      : radioState.playing
+        ? `${radioState.place} · ${radioState.station}`
+        : radioState.loading
+          ? `tuning ${radioState.place ?? ''}…`
+          : '') ||
+    station ||
+    (peers.length === 0
+      ? presence.current.shared
+        ? 'you have the place to yourself'
+        : 'you have the place to yourself · this browser only'
+      : `${peers.length + 1} here right now`)
+
   return (
     <main className="shop" data-seated={seatIndex !== null}>
       <Scene
@@ -360,114 +394,32 @@ export default function App() {
       <Arrival ready={ready} />
 
       <header className="sign">
-        <h1>
-          <span>Near</span>
-          <span>Coffee</span>
-        </h1>
-        <p>Mormon Row, Wyoming · open whenever you are</p>
+        <h1>Near Coffee</h1>
+        <p>Mormon Row, Wyoming</p>
       </header>
 
-
-      <div className="wall">
-        {writing ? (
-          <div className="wall-form">
-            <input
-              autoFocus
-              value={draft}
-              maxLength={MAX_LENGTH}
-              placeholder="one line, then it is on the wall"
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void pin()
-                if (e.key === 'Escape') setWriting(false)
-              }}
-              aria-label="Write a note for the wall"
-            />
-            <span className="wall-count">{MAX_LENGTH - draft.length}</span>
-            <button className="btn on" onClick={() => void pin()}>
-              pin it
-            </button>
-            <button className="btn ghost" onClick={() => setWriting(false)}>
-              never mind
-            </button>
-          </div>
-        ) : (
-          <button className="btn" onClick={() => setWriting(true)}>
-            leave a note
-          </button>
-        )}
-        <span className="wall-note">
-          {wallNote ||
-            (napkins.length
-              ? `${napkins.length} on the wall · gone in ${LIFETIME_DAYS} days`
-              : `nothing pinned yet · notes fade after ${LIFETIME_DAYS} days`)}
-          {!wall.current.shared && ' · only you can see these'}
-        </span>
-      </div>
-
-      <div className="controls">
-        <button
-          className={`btn ${soundOn ? 'on' : ''}`}
-          onClick={toggleSound}
-          aria-pressed={soundOn}
-          title={soundOn ? 'silence the café' : 'listen to the café'}
-        >
-          {soundOn ? 'sound on' : 'sound off'}
-        </button>
-        <button
-          className={`btn ${radioState.playing ? 'on' : ''}`}
-          onClick={toggleRadio}
-          aria-pressed={radioState.playing}
-        >
-          {radioState.loading ? 'tuning…' : radioState.playing ? 'radio on' : 'radio off'}
-        </button>
-        {(radioState.playing || radioState.error) && (
-          <>
-            <button className="btn ghost" onClick={nextPlace} title="somewhere else in the world">
-              elsewhere
-            </button>
-            <button className="btn ghost" onClick={nextStation} title="another station here">
-              next
-            </button>
-          </>
-        )}
-        {(radioState.playing || radioState.loading || radioState.error) && (
-          <span className="now-playing">
-            {radioState.error
-              ? `${radioState.place ?? ''} — ${radioState.error}`
-              : radioState.playing
-                ? `${radioState.place} · ${radioState.station}`
-                : `tuning ${radioState.place ?? ''}…`}
-          </span>
-        )}
-      </div>
-
       {/*
-       * One stack at the foot of the frame. The hint, the clock and the
-       * station label used to be three separately-positioned elements that
-       * happened to land near each other, and at 1440x900 they printed
-       * straight across the saucer.
+       * One bar.
+       *
+       * This was six separately-positioned things around the edge of the
+       * frame: the wordmark, two control pills top right, a hint pill sitting
+       * on top of a clock pill at the bottom, a note button bottom left with
+       * a counter wrapping under it, and a presence line bottom right. Each
+       * was reasonable on its own and together they read as confetti laid
+       * round a photograph — six shapes, four alignments, no relationship
+       * between any of them.
+       *
+       * Everything that is a control or a status now lives in this one
+       * container, and the two things that expand — the time scrubber and the
+       * note field — open *inside* it, above the row. So the chrome is one
+       * object that occasionally grows rather than a set that occasionally
+       * multiplies.
        */}
-      <div className="foot">
-        {/* Two wordings, swapped by the stylesheet. The long one does not fit
-            on one line at 390px and a two-line hint pushes the whole foot
-            stack up into the room. */}
-        <div className={`hint ${walked ? 'gone' : ''}`}>
-          <span className="wide-only">drag to look · tap the floor to walk</span>
-          <span className="narrow-only">tap the floor to walk</span>
-        </div>
-        <div className="foot-row">
-          <div className={`clock ${panelOpen ? 'open' : ''}`}>
-        <button className="clock-face" onClick={() => setPanelOpen((v) => !v)} aria-expanded={panelOpen}>
-          <span className="clock-time">{formatHour(hour)}</span>
-          <span className="clock-meta">
-            {daylight.label}
-            {conditions}
-          </span>
-        </button>
+      <div className="bar">
         {panelOpen && (
-          <div className="clock-panel">
+          <div className="bar-drawer">
             <input
+              className="scrub"
               type="range"
               min={0}
               max={23.99}
@@ -480,19 +432,121 @@ export default function App() {
               aria-label="Time of day"
             />
             <button
-              className="btn ghost"
+              className="btn quiet"
               onClick={() => {
                 setScrubbing(false)
                 setHour(localHour())
               }}
             >
-              back to now
+              now
+            </button>
+            {/* Where the real sun is. This was a line pinned to the bottom
+                of the screen at all times; it is about the time of day, so
+                it belongs with the time control and nowhere else. */}
+            {place.solar && (
+              <span className="drawer-note">
+                sun {formatHour(place.solar.sunrise)}–{formatHour(place.solar.sunset)}
+                {place.solar.moonPhase ? ` · ${place.solar.moonPhase.toLowerCase()} moon` : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {writing && (
+          <div className="bar-drawer">
+            <input
+              className="note-field"
+              autoFocus
+              value={draft}
+              maxLength={MAX_LENGTH}
+              placeholder="one line, then it is on the wall"
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void pin()
+                if (e.key === 'Escape') setWriting(false)
+              }}
+              aria-label="Write a note for the wall"
+            />
+            <span className="count">{MAX_LENGTH - draft.length}</span>
+            <button className="btn live" onClick={() => void pin()}>
+              pin it
+            </button>
+            <button className="btn quiet" onClick={() => setWriting(false)}>
+              cancel
             </button>
           </div>
         )}
-          </div>
+
+        <div className="bar-row">
+          {/* The time, and the only number in the interface. */}
+          <button
+            className={`clock ${panelOpen ? 'open' : ''}`}
+            onClick={() => setPanelOpen((v) => !v)}
+            aria-expanded={panelOpen}
+            title="change the time of day"
+          >
+            <span className="clock-time">{formatHour(hour)}</span>
+            <span className="clock-meta">
+              {daylight.label}
+              {conditions}
+            </span>
+          </button>
+
+          <span className="bar-rule" aria-hidden />
+
+          <button
+            className={`btn ${soundOn ? 'live' : ''}`}
+            onClick={toggleSound}
+            aria-pressed={soundOn}
+            title={soundOn ? 'silence the café' : 'listen to the café'}
+          >
+            sound
+          </button>
+          <button
+            className={`btn ${radioState.playing ? 'live' : ''}`}
+            onClick={toggleRadio}
+            aria-pressed={radioState.playing}
+          >
+            {radioState.loading ? 'tuning…' : 'radio'}
+          </button>
+          {(radioState.playing || radioState.error) && (
+            <>
+              <button className="btn quiet" onClick={nextPlace} title="somewhere else in the world">
+                elsewhere
+              </button>
+              <button className="btn quiet" onClick={nextStation} title="another station here">
+                next
+              </button>
+            </>
+          )}
+
+          <span className="bar-rule" aria-hidden />
+
+          <button
+            className={`btn ${writing ? 'live' : ''}`}
+            onClick={() => setWriting((v) => !v)}
+            title={
+              napkins.length
+                ? `${napkins.length} on the wall · gone in ${LIFETIME_DAYS} days`
+                : `nothing pinned yet · notes fade after ${LIFETIME_DAYS} days`
+            }
+          >
+            note
+          </button>
+
+          {/*
+           * One status slot.
+           *
+           * There were five of these — the hint, the station label, the
+           * now-playing line, the napkin counter and the presence note — each
+           * in its own corner in its own treatment, all saying something
+           * quiet about right now, all on screen at once. They are one line
+           * with a priority order instead. `status` is computed above.
+           */}
+          <span className="status" aria-live="polite">
+            {status}
+          </span>
         </div>
-        <div className={`station ${walked ? 'shown' : ''}`}>{station}</div>
       </div>
 
       {seatIndex !== null && (
@@ -540,42 +594,26 @@ export default function App() {
           ) : (
             <div className="seat-actions">
               <button
-                className="btn on"
+                className="btn live"
                 onClick={() => setMenuOpen(true)}
                 disabled={!!order && !order.done}
               >
                 {order && !order.done ? 'coming up…' : 'order something'}
               </button>
-              <button className="btn ghost" onClick={stand}>
+              <button className="btn quiet" onClick={stand}>
                 stand up
               </button>
             </div>
           )}
 
           {menuOpen && (
-            <button className="btn ghost" onClick={() => setMenuOpen(false)}>
+            <button className="btn quiet" onClick={() => setMenuOpen(false)}>
               never mind
             </button>
           )}
         </div>
       )}
 
-      <div className="presence-note">
-        {peers.length === 0
-          ? 'you have the place to yourself'
-          : peers.length === 1
-            ? 'someone else is here'
-            : `${peers.length} others are here`}
-        {!presence.current.shared && ' · this browser only'}
-      </div>
-
-      {place.solar && (
-        <div className="place-note">
-          live from mormon row, wyoming · sun {formatHour(place.solar.sunrise)}–
-          {formatHour(place.solar.sunset)}
-          {place.solar.moonPhase ? ` · ${place.solar.moonPhase.toLowerCase()} moon` : ''}
-        </div>
-      )}
     </main>
   )
 }

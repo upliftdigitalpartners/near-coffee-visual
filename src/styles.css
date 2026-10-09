@@ -3,17 +3,29 @@
 /* ---------------------------------------------------------------------------
  * The chrome.
  *
- * One rule governs all of it: the scene is the photograph and this is the
- * caption. Nothing here may compete with the room, and nothing here may be
- * illegible over it either — which are opposite pressures, and the old
- * version resolved them by making everything 42% opaque and hoping. That
- * works at dusk and fails at midday, because a text-shadow cannot save grey
- * type sitting on a sunlit floorboard.
+ * The scene is the photograph and this is the caption. Two rules follow from
+ * that and the last pass broke both of them.
  *
- * So anything carrying words now sits on glass instead: a blurred, slightly
- * tinted pane that guarantees contrast whatever is behind it, and that takes
- * its tint from the room's own light so it belongs to the frame. Type can
- * then be quiet because it does not have to fight.
+ * **One object, not six.** The wordmark, two control pills, a hint pill, a
+ * clock pill, a note button, a counter and a presence line were seven
+ * separately-positioned elements in four different alignments, each a
+ * different shape, none of them related to any other. Nothing was wrong with
+ * any one of them; together they read as confetti scattered round the edge of
+ * a picture. There is now a wordmark and a bar. The two things that expand —
+ * the time scrubber and the note field — open inside the bar, so the chrome
+ * is one object that occasionally grows.
+ *
+ * **Amber means live.** A control that is on, the focus ring, and the moment
+ * an order is ready. It had got to twenty-nine uses, including a pulsing dot,
+ * a gradient hairline on every pane and the clock numerals, at which point it
+ * was not an accent, it was the house colour of the interface.
+ *
+ * Everything carrying words sits on glass, which is unchanged and was always
+ * right: a blurred, slightly tinted pane guarantees contrast whatever is
+ * behind it, and it takes its tint from the room's own light so it belongs to
+ * the frame. The saturate() alongside each blur is not decoration — blurring
+ * alone greys whatever is behind the pane, and pushing saturation back up is
+ * the difference between frosted glass and a smear.
  * ------------------------------------------------------------------------ */
 
 *,
@@ -32,7 +44,7 @@ body,
 body {
   background: #0b0806;
   color: var(--ink);
-  font-family: var(--display);
+  font-family: var(--ui);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   overscroll-behavior: none;
@@ -50,154 +62,89 @@ body {
   touch-action: none;
 }
 
-/* Surfaces ----------------------------------------------------------------
- *
- * `backdrop-filter` is doing the real work. The saturate() alongside the blur
- * is not decoration: blurring alone greys whatever is behind the pane, and
- * pushing the saturation back up keeps the room's colour reading through it,
- * which is the difference between frosted glass and a smear.
- */
-.pane,
-.seat-panel,
-.clock-panel,
-.wall-form,
-.hint {
+/* Glass ------------------------------------------------------------------- */
+.bar,
+.seat-panel {
   background: var(--pane);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5);
   backdrop-filter: blur(var(--blur)) saturate(1.5);
   border: 1px solid var(--pane-edge);
-  /* A brighter top edge. Every real pane of anything catches the light on its
-     upper lip, and without it a translucent rectangle reads as a hole. */
-  border-top-color: var(--pane-edge-top);
   border-radius: var(--r-pane);
-  box-shadow: var(--lift-2);
-  position: relative;
+  box-shadow: var(--lift);
 }
 
-/* A warm hairline laid along the top of every pane.
-   One pixel of accent is doing a lot of work here: it is what stops a stack
-   of dark translucent rectangles reading as a system dialog. It also ties
-   the chrome to the only other warm thing on screen — the doorway. */
-.pane::before,
-.seat-panel::before,
-.clock-panel::before,
-.wall-form::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -1px;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--accent-rule) 18%,
-    var(--accent-rule) 82%,
-    transparent
-  );
-  pointer-events: none;
-}
-
-/* Controls ---------------------------------------------------------------- */
+/* Controls ----------------------------------------------------------------
+ *
+ * Uppercase is spent here and nowhere else. A tracked micro-cap holds its
+ * shape at 12px over any background, which is why station signage has looked
+ * like this for a century — but when every label on screen is set that way
+ * they all shout at the same volume and nothing reads as a control.
+ */
 .btn {
   font-family: var(--ui);
-  font-size: var(--t-label);
-  /* Micro-caps. Lower case at 11px over a photograph is soup; small caps
-     tracked out hold their shape at any size and against any background,
-     which is why every piece of signage ever printed on a station platform
-     looks like this. */
+  font-size: var(--t-micro);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: var(--track);
+  letter-spacing: var(--track-caps);
   color: var(--ink-2);
-  background: var(--pane);
-  -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
-  backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
-  border: 1px solid var(--pane-edge);
-  border-top-color: var(--pane-edge-top);
-  border-radius: var(--r-pill);
-  padding: 10px 17px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-ctl);
+  padding: 8px 12px;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: var(--lift-1);
   transition:
     color var(--fast) var(--ease-soft),
-    background var(--fast) var(--ease-soft),
-    border-color var(--fast) var(--ease-soft),
-    transform var(--fast) var(--ease);
+    background var(--fast) var(--ease-soft);
 }
 
 .btn:hover {
   color: var(--ink);
-  border-color: var(--pane-edge-top);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: translateY(0.5px);
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--live);
+  outline-offset: 1px;
 }
 
-/* On. The only filled thing on screen, so it is unambiguous which controls
-   are doing something and which are offering to — and now it glows, because
-   one unmistakable thing is worth more than six evenly-weighted ones. */
-.btn.on {
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-color: transparent;
-  box-shadow: var(--accent-glow);
+/* Live. The one saturated thing on screen, so it is never ambiguous which
+   controls are doing something and which are offering to. */
+.btn.live {
+  color: var(--live-ink);
+  background: var(--live);
 }
 
-.btn.on:hover {
-  color: var(--accent-ink);
-  filter: brightness(1.08);
+.btn.live:hover {
+  color: var(--live-ink);
+  background: var(--live);
+  filter: brightness(1.07);
 }
 
-.btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-  box-shadow: var(--lift-1);
-}
-
-/* Quiet. Carries no pane at all, so a row of them does not read as a toolbar. */
-.btn.ghost {
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  border-color: transparent;
-  box-shadow: none;
+.btn.quiet {
   color: var(--ink-3);
 }
 
-.btn.ghost:hover {
-  color: var(--ink);
-  background: var(--accent-dim);
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
-.btn.icon {
-  padding: 9px 11px;
+.btn:disabled:hover {
+  background: transparent;
+  color: var(--ink-3);
 }
 
 /* The wordmark ------------------------------------------------------------
  *
- * This was one 16-21px line of tracked lower case in the corner, which is a
- * watermark. The room it sits on is a wide, pale, horizontal picture with a
- * great deal of empty snow and empty ceiling in it, and a caption-sized name
- * in the corner of a picture like that does not read as the name of the
- * place — it reads as something the renderer stamped on.
- *
- * So it is a lockup now: a rule, the name stacked and set large, and the
- * location underneath in micro-caps. Stacked rather than on one line because
- * the frame is wide and the empty space is vertical, and because two short
- * words stacked make a block, which is a shape, which is what "graphic"
- * actually means.
- *
- * It takes no pane. Display type at this size does not need one — there is
- * enough of it that a shadow carries it — and putting a slab behind the name
- * would wall off the corner of the room it is sitting in.
+ * Small. It was clamp(27px, 3.6vw, 46px), stacked, over a glowing rule, with
+ * an amber tracked strapline under it — which made the name of the place the
+ * second-loudest thing in a picture whose entire subject is a room, and ran
+ * it into the doorway at three of the five camera stations.
  */
 .sign {
   position: absolute;
@@ -205,21 +152,7 @@ body {
   left: var(--edge-x);
   pointer-events: none;
   z-index: 10;
-  /* Its own stacking context, so the scrim below can sit at z-index -1 and
-     land behind the type without falling behind the canvas. */
   isolation: isolate;
-}
-
-/* The rule above the name. Warm, short, and the first thing that tells you
-   the chrome and the doorway belong to the same building. */
-.sign::before {
-  content: '';
-  display: block;
-  width: 56px;
-  height: 2px;
-  margin-bottom: var(--s3);
-  background: var(--accent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 /*
@@ -227,296 +160,214 @@ body {
  *
  * The mark carries no glass, which is right — but at the porch station the
  * frame behind the top-left corner is a snowfield at near-full white, and
- * amber micro-caps on snow is not legible at any shadow strength. A soft
- * radial darkening anchored to the corner fixes it without putting a visible
- * rectangle in the room: on a dark wall it is invisible, and on snow it is
- * the difference between reading the name and not.
+ * type on snow is not legible at any shadow strength. A soft radial darkening
+ * anchored to the corner fixes it without putting a visible rectangle in the
+ * room: on a dark wall it is invisible, and on snow it is the difference
+ * between reading the name and not.
  */
 .sign::after {
   content: '';
   position: absolute;
   left: calc(var(--edge-x) * -1);
   top: calc(var(--edge-t) * -1);
-  width: 560px;
-  height: 340px;
+  width: 420px;
+  height: 230px;
   max-width: 92vw;
   z-index: -1;
   pointer-events: none;
   background: radial-gradient(
     ellipse 62% 70% at 14% 22%,
-    rgba(8, 6, 4, 0.62),
-    rgba(8, 6, 4, 0.28) 46%,
+    rgba(8, 6, 4, 0.6),
+    rgba(8, 6, 4, 0.26) 46%,
     rgba(8, 6, 4, 0) 72%
   );
 }
 
 .sign h1 {
   margin: 0;
+  font-family: var(--display);
   font-size: var(--t-mark);
   font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  /* Tight. Two stacked words want to read as one object, and the default
-     1.2 leading opens a gap you could park the strapline in. */
-  line-height: 0.92;
+  letter-spacing: var(--track-mark);
   color: var(--ink);
-  text-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.6),
-    0 4px 40px rgba(0, 0, 0, 0.95);
-}
-
-/* The second line, indented by exactly the tracking so the stems line up.
-   Without this the N of NEAR and the C of COFFEE are a letter-space apart
-   and the block has a ragged left edge, which at this size is the only
-   thing you see. */
-.sign h1 span {
-  display: block;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9);
 }
 
 .sign p {
-  margin: var(--s3) 0 0;
-  font-family: var(--ui);
+  margin: 5px 0 0;
   font-size: var(--t-micro);
-  font-weight: 600;
-  letter-spacing: var(--track-wide);
-  color: var(--accent);
-  text-transform: uppercase;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.95);
-}
-
-/* Top-right cluster ------------------------------------------------------- */
-.controls {
-  position: absolute;
-  top: var(--edge-t);
-  right: var(--edge-r);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-}
-
-.now-playing {
-  font-family: var(--ui);
-  font-size: var(--t-micro);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   color: var(--ink-3);
-  max-width: 30ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: var(--s1);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
 }
 
-/* Bottom bar --------------------------------------------------------------
+/* The bar -----------------------------------------------------------------
  *
- * One row, centred, holding the clock and whatever else belongs at the foot
- * of the frame. Previously the clock, the hint and the note counter were
- * three absolutely-positioned things that happened to end up near each other
- * and overlapped the cup at this aspect ratio.
+ * Centred at the foot, holding every control and the one status line. Width
+ * is content-driven up to a cap rather than fixed, so with the radio off it
+ * is a short bar and with it on it grows to fit the extra controls — a fixed
+ * width would mean a mostly-empty rectangle most of the time.
  */
-.foot {
+.bar {
   position: absolute;
-  left: 50%;
   bottom: var(--edge-b);
-  transform: translateX(-50%);
+  /*
+   * Centred by auto margins, not by `left: 50%` and a negative translate.
+   * The entrance animation moves the bar on `transform`, and a transform set
+   * in a keyframe replaces the one in the rule rather than composing with it
+   * — so the centring silently vanished the moment the animation applied and
+   * the bar sat a half-width to the right of where it belonged. Auto margins
+   * leave `transform` free for motion, which is what it is for.
+   */
+  left: var(--edge-x);
+  right: var(--edge-r);
+  margin-inline: auto;
+  width: fit-content;
+  max-width: min(960px, 100%);
   z-index: 10;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--s3);
-  width: min(620px, calc(100vw - var(--edge-x) - var(--edge-r)));
+  padding: var(--s2);
+  animation: settle var(--slow) var(--ease) both;
 }
 
-.hint {
+.bar-row {
   display: flex;
   align-items: center;
-  gap: var(--s2);
-  font-family: var(--ui);
-  font-size: var(--t-micro);
-  font-weight: 600;
-  letter-spacing: var(--track-wide);
-  text-transform: uppercase;
-  color: var(--ink-2);
-  pointer-events: none;
-  padding: 7px 15px;
-  border-radius: var(--r-pill);
-  transition: opacity var(--slow) var(--ease-soft);
+  gap: var(--s1);
+  min-width: 0;
 }
 
-/* A live dot. The hint is the one instruction in the whole interface and it
-   was a grey line of text that read as a disclaimer; a slow pulse is the
-   cheapest way to say "this is addressed to you, now". */
-.hint::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
-  animation: pulse 2.4s var(--ease-soft) infinite;
+/* A hairline between groups: time, then controls, then the wall. Three
+   groups, two rules — and no border, fill or shadow anywhere else in the
+   bar, because the bar itself is already the container. */
+.bar-rule {
+  flex: none;
+  width: 1px;
+  align-self: stretch;
+  margin: 4px var(--s2);
+  background: rgba(255, 255, 255, 0.14);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.35;
-    transform: scale(0.72);
-  }
-}
-
-.hint.gone {
-  opacity: 0;
-}
-
-.foot-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s2);
-  flex-wrap: wrap;
-}
-
-/* Where you are, when you are ---------------------------------------------- */
+/* The time ----------------------------------------------------------------
+ *
+ * The only number in the building and the only control that changes what you
+ * are looking at, so it is set as a number: tabular, a step larger than
+ * everything else, with the rest of the hour demoted to a label beside it.
+ * "4:23pm · afternoon · 4°C clear" all at one size is a status bar.
+ */
 .clock {
   display: flex;
-  align-items: center;
-}
-
-/*
- * The time is the one number in the building and the only control that
- * changes what you are looking at, so it is set as a number rather than as a
- * word: large, tabular, warm, with everything else about the hour demoted to
- * a micro-caps line beside it. A clock reading "7:40am · golden hour · 4°C
- * clear" all at 12px is a status bar. Split, it is a dial.
- */
-.clock-face {
-  display: flex;
   align-items: baseline;
-  gap: var(--s3);
-  font-family: var(--ui);
-  font-size: var(--t-label);
-  letter-spacing: 0.04em;
-  color: var(--ink-2);
-  background: var(--pane);
-  -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
-  backdrop-filter: blur(var(--blur-sm)) saturate(1.4);
-  border: 1px solid var(--pane-edge);
-  border-top-color: var(--pane-edge-top);
-  border-radius: var(--r-pill);
-  padding: 8px 18px;
+  gap: var(--s2);
+  padding: 6px var(--s3) 6px var(--s2);
+  background: none;
+  border: 0;
+  border-radius: var(--r-ctl);
   cursor: pointer;
-  box-shadow: var(--lift-1);
-  transition:
-    color var(--fast) var(--ease-soft),
-    border-color var(--fast) var(--ease-soft);
+  min-width: 0;
+  transition: background var(--fast) var(--ease-soft);
 }
 
-.clock-face:hover {
-  color: var(--ink);
-  border-color: var(--accent-rule);
+.clock:hover,
+.clock.open {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.clock:focus-visible {
+  outline: 2px solid var(--live);
+  outline-offset: 1px;
 }
 
 .clock-time {
-  font-size: 17px;
+  font-family: var(--ui);
+  font-size: var(--t-num);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .clock-meta {
   font-size: var(--t-micro);
-  font-weight: 600;
-  letter-spacing: var(--track);
-  text-transform: uppercase;
   color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* The accent only means "live". Scrub the time and it goes plain, because
-   7:40am is then a thing you chose rather than a thing that is true. */
-.clock.open .clock-time {
-  color: var(--ink);
-}
-
-.clock-panel {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  padding: var(--s3) var(--s4);
-  margin-top: var(--s2);
-  animation: rise var(--mid) var(--ease) both;
-}
-
-.clock-panel input[type='range'] {
-  width: clamp(120px, 24vw, 200px);
-  accent-color: var(--warm);
-}
-
-.station {
-  font-family: var(--ui);
+/* The status slot ---------------------------------------------------------
+ *
+ * One line, right-aligned, taking whatever room is left. It replaces five
+ * separate corner notes; see `status` in App.tsx for the priority order.
+ * Quiet on purpose — it is the only thing in the bar you are never asked to
+ * act on.
+ */
+.status {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 var(--s2) 0 var(--s4);
+  text-align: right;
   font-size: var(--t-micro);
-  font-weight: 600;
-  letter-spacing: var(--track-mega);
-  text-transform: uppercase;
-  color: var(--accent);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--slow) var(--ease-soft);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.station.shown {
-  opacity: 1;
-}
-
-/* The napkin wall ---------------------------------------------------------- */
-.wall {
-  position: absolute;
-  left: var(--edge-x);
-  bottom: var(--edge-b);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s2);
-  max-width: min(360px, 60vw);
-}
-
-.wall-form {
+/* Drawers -----------------------------------------------------------------
+ *
+ * The scrubber and the note field. They open above the row, inside the bar,
+ * which is the whole point: the previous version floated a separate panel
+ * under the clock and a separate form over by the note button, so acting on
+ * the interface made more objects appear in more places.
+ *
+ * No entrance animation, deliberately. The drawer is the direct answer to a
+ * click and the pane around it is already on screen, so there is nothing to
+ * introduce — and an opacity keyframe on something that has to be usable the
+ * instant it appears is a liability. It is one in practice as well as in
+ * principle: the drawer came back as an empty band in a headless capture
+ * because its layer had not rastered, and the element was laid out at full
+ * height with everything inside it still at opacity 0.
+ */
+.bar-drawer {
   display: flex;
   align-items: center;
   gap: var(--s2);
-  padding: var(--s2);
-  animation: rise var(--mid) var(--ease) both;
+  padding: var(--s2) var(--s2) var(--s3);
+  margin-bottom: var(--s1);
+  border-bottom: 1px solid var(--pane-edge);
 }
 
-.wall-form input {
+.scrub {
+  flex: 1 1 260px;
+  min-width: 160px;
+  accent-color: var(--live);
+}
+
+.note-field {
+  flex: 1 1 300px;
+  min-width: 0;
   font-family: var(--display);
   font-size: var(--t-body);
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.26);
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid transparent;
-  border-radius: var(--r-field);
-  padding: 9px 12px;
-  width: clamp(150px, 34vw, 230px);
+  border-radius: var(--r-ctl);
+  padding: 8px 11px;
   transition: border-color var(--fast) var(--ease-soft);
 }
 
-.wall-form input:focus {
+.note-field:focus {
   outline: none;
-  border-color: var(--warm);
+  border-color: var(--live);
 }
 
-.wall-form input::placeholder {
+.note-field::placeholder {
   color: var(--ink-4);
 }
 
-.wall-count {
-  font-family: var(--ui);
+.count {
   font-size: var(--t-micro);
   font-variant-numeric: tabular-nums;
   color: var(--ink-4);
@@ -524,76 +375,16 @@ body {
   text-align: right;
 }
 
-/* Both corner notes were --ink-4, which is 26% ink, and over a sunlit
-   floorboard that is not a quiet label, it is an invisible one. Quiet is the
-   intent; unreadable is a bug. Micro-caps at --ink-3 with a real shadow is
-   quiet and still legible at midday. */
-.wall-note,
-.presence-note {
-  font-family: var(--ui);
-  font-size: var(--t-micro);
-  font-weight: 600;
-  letter-spacing: var(--track);
-  text-transform: uppercase;
-  color: var(--ink-3);
-  text-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.8),
-    0 2px 18px rgba(0, 0, 0, 0.95);
-}
-
-.wall-note {
-  padding-left: var(--s2);
-}
-
-.wide-only {
-  display: inline;
-}
-
-.narrow-only {
-  display: none;
-}
-
-.shop[data-seated='true'] .presence-note {
-  display: none;
-}
-
-.presence-note {
-  position: absolute;
-  right: var(--edge-r);
-  bottom: var(--edge-b);
-  z-index: 10;
-  text-align: right;
-  max-width: 34vw;
-  pointer-events: none;
-}
-
-.place-note {
-  font-family: var(--ui);
+.drawer-note {
   font-size: var(--t-micro);
   color: var(--ink-4);
+  white-space: nowrap;
 }
 
-/* Seated ------------------------------------------------------------------
- *
- * A card, not a wall. The old one was a flat slab pinned to the bottom of a
- * phone and it took 40% of the screen — which is 40% of the reason anyone
- * came. It is narrower now, it floats clear of the edges, and on a phone it
- * stops well short of half.
- */
-.seat-panel {
-  position: absolute;
-  right: var(--edge-r);
-  bottom: var(--edge-b);
-  z-index: 20;
-  width: min(380px, calc(100vw - var(--edge-x) - var(--edge-r)));
-  padding: var(--s5);
-  animation: rise var(--slow) var(--ease) both;
-}
-
-@keyframes rise {
+@keyframes settle {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -601,84 +392,83 @@ body {
   }
 }
 
-.seat-kicker {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  font-family: var(--ui);
-  font-size: var(--t-micro);
-  font-weight: 700;
-  letter-spacing: var(--track-mega);
-  text-transform: uppercase;
-  color: var(--accent);
+/* Seated ------------------------------------------------------------------
+ *
+ * The one card in the interface, and it earns its place: it only exists when
+ * you have sat down, and it is the only thing you read rather than operate.
+ */
+.seat-panel {
+  position: absolute;
+  right: var(--edge-r);
+  bottom: var(--edge-b);
+  z-index: 20;
+  width: min(var(--card-w), calc(100vw - var(--edge-x) - var(--edge-r)));
+  padding: var(--s5);
+  animation: settle var(--slow) var(--ease) both;
 }
 
-/* A rule running off to the right of the kicker, to the edge of the card.
-   An editorial device and nothing more, but it is the thing that makes the
-   card read as a page rather than a dialog. */
-.seat-kicker::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--accent-rule), transparent);
+.seat-kicker {
+  display: block;
+  font-size: var(--t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-caps);
+  color: var(--ink-4);
 }
 
 .seat-panel h2 {
-  margin: var(--s3) 0 0;
+  margin: var(--s2) 0 0;
+  font-family: var(--display);
   font-size: var(--t-title);
   font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  line-height: 1.04;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
   color: var(--ink);
 }
 
 .seat-panel p {
   margin: var(--s3) 0 0;
+  font-family: var(--display);
   font-size: var(--t-lead);
-  line-height: 1.62;
+  line-height: 1.6;
   color: var(--ink-2);
 }
 
 .order-status {
   margin-top: var(--s4) !important;
-  font-family: var(--ui);
+  font-family: var(--ui) !important;
   font-size: var(--t-label) !important;
-  letter-spacing: 0.03em;
   color: var(--ink-3) !important;
 }
 
+/* Live, because your order being ready is the one thing in here that is
+   genuinely an event. */
 .order-status.done {
-  color: var(--accent) !important;
-  font-weight: 600 !important;
+  color: var(--live) !important;
 }
 
 .seat-actions {
   display: flex;
   align-items: center;
-  gap: var(--s2);
+  gap: var(--s1);
   margin-top: var(--s5);
+  margin-left: calc(var(--s3) * -1);
 }
 
 /* The menu ----------------------------------------------------------------
  *
- * Numbered, and headed with a photograph of what is actually in the case.
- *
- * The numbers are not decoration. A list of five lower-case names and five
- * prices is two ragged columns with a gap down the middle; a set-width
- * tabular number at the head of each row gives the block a hard left edge and
- * turns it into a thing that looks ordered — which a menu is. It also makes
- * each item nameable out loud, which is how anyone has ever ordered anything
- * in a cafe.
+ * Numbered, and headed with a photograph of what is actually in the case. The
+ * numbers are not decoration: a set-width tabular figure at the head of each
+ * row gives the block a hard left edge, which five ragged lower-case names
+ * and five prices do not have on their own.
  */
 .menu-plate {
   position: relative;
   margin-top: var(--s4);
-  border-radius: var(--r-field);
+  border-radius: var(--r-ctl);
   overflow: hidden;
-  /* 3.2:1, the ratio the source crop was cut to. Fixed rather than
-     aspect-ratio-from-the-image so the card does not jump height when the
-     photograph decodes. */
+  /* Fixed at the ratio the source crop was cut to, rather than taken from the
+     image, so the card does not jump height when the photograph decodes. */
   aspect-ratio: 3.2 / 1;
   background: rgba(0, 0, 0, 0.3);
 }
@@ -694,14 +484,12 @@ body {
    brightness sitting under a render of a room is an advert — is baked into
    the JPEG at export rather than applied as a CSS filter here. It is one
    fewer composited layer inside a card that already carries a
-   backdrop-filter, and a slightly smaller file. See the export step recorded
-   in CREDITS.md. */
-
+   backdrop-filter, and a slightly smaller file. See CREDITS.md. */
 .menu-plate::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgba(10, 7, 5, 0.86), transparent 62%);
+  background: linear-gradient(0deg, rgba(10, 7, 5, 0.8), transparent 58%);
 }
 
 .menu-plate-label {
@@ -709,12 +497,11 @@ body {
   left: var(--s3);
   bottom: 9px;
   z-index: 1;
-  font-family: var(--ui);
   font-size: var(--t-micro);
-  font-weight: 700;
-  letter-spacing: var(--track-wide);
+  font-weight: 600;
   text-transform: uppercase;
-  color: var(--accent);
+  letter-spacing: var(--track-caps);
+  color: var(--ink-2);
 }
 
 .menu {
@@ -735,7 +522,7 @@ body {
   padding: var(--s3) var(--s2);
   background: none;
   border: 0;
-  border-radius: var(--r-field);
+  border-radius: var(--r-ctl);
   font-family: var(--display);
   font-size: var(--t-body);
   color: var(--ink-2);
@@ -747,23 +534,21 @@ body {
 }
 
 .menu button:hover {
-  background: var(--accent-dim);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--ink);
+}
+
+.menu button:focus-visible {
+  outline: 2px solid var(--live);
+  outline-offset: -2px;
 }
 
 .menu-no {
   font-family: var(--ui);
   font-size: var(--t-micro);
-  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
   color: var(--ink-4);
   min-width: 2ch;
-  transition: color var(--fast) var(--ease-soft);
-}
-
-.menu button:hover .menu-no {
-  color: var(--accent);
 }
 
 .menu-name {
@@ -773,7 +558,6 @@ body {
 .menu-price {
   font-family: var(--ui);
   font-size: var(--t-label);
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ink-3);
 }
@@ -783,32 +567,31 @@ body {
   font-family: var(--ui);
   font-size: 11.5px;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--ink);
   white-space: nowrap;
   padding: 5px 10px;
-  background: rgba(10, 8, 6, 0.74);
-  -webkit-backdrop-filter: blur(var(--blur-sm));
-  backdrop-filter: blur(var(--blur-sm));
+  background: rgba(10, 8, 6, 0.78);
+  -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
   border: 1px solid var(--pane-edge);
-  border-radius: var(--r-pill);
-  box-shadow: var(--lift-1);
+  border-radius: var(--r-ctl);
 }
 
 /* Over the room, under the chrome ------------------------------------------
  *
- * Both of these sit at z-index 5, which is below every piece of chrome (10)
- * and below the seated card (20). That is the whole point of them: they are
- * part of the photograph, not part of the caption. Grain laid over UI text
- * makes the text look like a compression artefact, and a vignette over a
- * button makes the button look disabled in the corners.
+ * Both sit at z-index 5, below every piece of chrome (10) and the seated card
+ * (20). That is the point of them: they are part of the photograph, not part
+ * of the caption. Grain over UI text makes the text look like a compression
+ * artefact, and a vignette over a button makes the button look disabled in
+ * the corners.
  */
 .grain {
   position: absolute;
   inset: -20%;
   z-index: 5;
   pointer-events: none;
-  opacity: 0.11;
+  opacity: 0.1;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -826,19 +609,48 @@ body {
   );
 }
 
-/* Phones ------------------------------------------------------------------
+/* Phones -------------------------------------------------------------------
  *
- * The scene is the product, so the chrome gives way rather than stacking up.
- * The seated card becomes a sheet at the foot of the screen but is capped at
- * 46vh, the wall form moves above it, and the strapline goes — on a 390px
- * screen it was wrapping into the controls.
+ * The bar spans the width rather than centring, and the status line moves to
+ * its own row underneath — at 390px a right-aligned status beside five
+ * controls has about four characters of room, which is worse than not showing
+ * it.
  */
 @media (max-width: 720px) {
-  .sign p {
-    display: none;
+  .bar {
+    width: auto;
+    max-width: none;
   }
 
-  .now-playing {
+  /*
+   * Three deliberate rows rather than whatever the wrap gives you: the time,
+   * then the controls, then the status. Left to wrap on its own the row put
+   * the clock and one lone button on the first line and the rest on the
+   * second, with a group divider stranded mid-row — an arrangement that
+   * changes shape every time a control appears or goes away.
+   */
+  .bar-row {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: var(--s1);
+  }
+
+  .clock {
+    flex: 1 0 100%;
+    justify-content: center;
+    padding: 6px var(--s3);
+  }
+
+  .status {
+    flex: 1 0 100%;
+    order: 10;
+    text-align: center;
+    padding: var(--s1) 0 2px;
+  }
+
+  /* The rows do the grouping here, so the vertical rules have nothing left to
+     separate and would only land at wrap points. */
+  .bar-rule {
     display: none;
   }
 
@@ -856,75 +668,37 @@ body {
     line-height: 1.55;
   }
 
-  .presence-note {
-    display: none;
-  }
-
-  .wall {
-    max-width: calc(100vw - var(--edge-x) - var(--edge-r));
-  }
-
-  .foot {
-    gap: var(--s2);
-  }
-
-  .wide-only {
-    display: none;
-  }
-
-  .narrow-only {
-    display: inline;
-  }
-
-  /*
-   * The foot stack is centred and 358px wide at 390px, and the napkin
-   * controls are pinned bottom-left — so the clock sat directly on top of
-   * "leave a note". Nothing was ever going to fit side by side down there, so
-   * on a phone the bottom of the screen is one column: the foot keeps the
-   * floor and the wall stands clear above it.
-   */
-  .wall {
-    bottom: calc(var(--edge-b) + 104px);
-  }
-
-  /* Smaller controls, so the top-right pills clear the wordmark. At 390px
-     "sound off" and "radio off" at full size reach back to within a few
-     pixels of the F in COFFEE. */
-  .btn {
-    padding: 8px 12px;
-    font-size: 10.5px;
-  }
-
-  /* The mark is two stacked words at the top left and the controls are a row
-     of pills at the top right, and at 390px they meet. Pulled in a step, and
-     the rule above it shortened to match. */
-  .sign h1 {
-    font-size: clamp(21px, 6vw, 25px);
-  }
-
-  .sign::before {
-    width: 38px;
-    margin-bottom: var(--s2);
-  }
-
   .menu-plate {
-    /* Wider and shallower on a phone: the card is already capped at 46vh and
-       a 3.2:1 photograph eats a third of that before a single item is
-       listed. */
+    /* Wider and shallower: the card is capped at 46vh and a 3.2:1 photograph
+       eats a third of that before a single item is listed. */
     aspect-ratio: 4.4 / 1;
     margin-top: var(--s3);
+  }
+
+  .sign p {
+    display: none;
   }
 }
 
 /* When the seated card is up on a phone it owns the bottom of the screen, so
-   everything else that lives there gets out of the way rather than peeking
-   out from under it. */
+   the bar gets out of the way rather than peeking out from under it. */
 @media (max-width: 720px) {
-  .shop[data-seated='true'] .wall,
-  .shop[data-seated='true'] .foot {
+  .shop[data-seated='true'] .bar {
     display: none;
   }
 }
+
+/* On a wide screen both live at the foot of the frame, so the bar centres in
+   what the card leaves rather than under it. Measured: at 1440 the bar's
+   right edge was 1040 and the card's left edge 1046, which is six pixels of
+   luck — and it runs out the moment the radio goes on and adds two more
+   controls to the row. */
+@media (min-width: 721px) {
+  .shop[data-seated='true'] .bar {
+    right: calc(var(--edge-r) + var(--card-w) + var(--s4));
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * Arrival: the screen between opening the page and the barn being ready.
  * See src/ui/Arrival.tsx.
@@ -1076,8 +850,7 @@ body {
   width: 72px;
   height: 3px;
   margin-bottom: var(--s4);
-  background: var(--accent);
-  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 60%, transparent);
+  background: rgba(253, 242, 226, 0.85);
   transform-origin: left center;
   animation: arrival-rule 1.2s var(--ease) both;
 }
@@ -1100,22 +873,21 @@ body {
 }
 
 /*
- * Lighter than --accent, and that is deliberate.
+ * Cream rather than amber.
  *
- * The in-scene masthead sits over timber; this one sits over a snowfield at
- * near-full white, and mid-amber micro-caps on snow do not read at any shadow
- * strength — the hue is close enough in luminance to the background that the
- * letterforms simply dissolve. Mixed most of the way to cream, it keeps the
- * warm cast and gets the contrast back.
+ * This sits over a snowfield at near-full white, and mid-amber micro-caps on
+ * snow do not read at any shadow strength — the hue is close enough in
+ * luminance to the background that the letterforms dissolve. It is also not
+ * a live state, so under the one-accent rule it has no claim on the colour.
  */
 .arrival-mark p {
   margin: var(--s4) 0 0;
   font-family: var(--ui);
   font-size: var(--t-micro);
-  font-weight: 700;
-  letter-spacing: var(--track-mega);
+  font-weight: 600;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--accent) 42%, #fff3dd);
+  color: rgba(253, 242, 226, 0.72);
   text-shadow:
     0 1px 3px rgba(0, 0, 0, 0.85),
     0 2px 20px rgba(0, 0, 0, 0.95);
@@ -1141,16 +913,17 @@ body {
 .arrival-state {
   font-family: var(--ui);
   font-size: var(--t-micro);
-  font-weight: 700;
-  letter-spacing: var(--track-wide);
+  font-weight: 600;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: rgba(253, 242, 226, 0.56);
   white-space: nowrap;
   transition: color var(--mid) var(--ease-soft);
 }
 
+/* Live: the one moment on this screen when something has actually happened. */
 .arrival.leaving .arrival-state {
-  color: var(--accent);
+  color: var(--live);
 }
 
 .arrival-bar {
@@ -1163,8 +936,7 @@ body {
 .arrival-bar span {
   display: block;
   height: 100%;
-  background: var(--accent);
-  box-shadow: 0 0 14px var(--accent);
+  background: var(--live);
   transform-origin: left center;
   transition: transform 0.45s ease-out;
 }
@@ -1172,10 +944,10 @@ body {
 .arrival-pct {
   font-family: var(--ui);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-  color: var(--accent);
+  color: rgba(253, 242, 226, 0.82);
   min-width: 3ch;
   text-align: right;
 }

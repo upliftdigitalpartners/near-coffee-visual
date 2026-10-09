@@ -1,18 +1,35 @@
 /* ---------------------------------------------------------------------------
  * Tokens.
  *
- * The chrome used to be a pile of one-off `clamp()` calls and hand-mixed
- * rgba, which is why nothing lined up with anything: the wordmark, the
- * controls and the bottom-left note all landed at different sizes, different
- * opacities and different distances from their edges, each chosen on its own.
- * Everything below this line is now spent from one of these.
- *
- * Two of them are not constants. `--room-r/g/b` carry the colour of the light
+ * Two of these are not constants. `--room-r/g/b` carry the colour of the light
  * actually in the barn this second, pushed in from the scene every time the
  * hour moves — see `onLight` in Scene.tsx. Every glass surface mixes a little
- * of it in, so the UI warms at golden hour and goes cold and blue at 3am
+ * of it in, so the chrome warms at golden hour and goes cold and blue at 3am
  * along with the room behind it. That is the whole reason the chrome can sit
  * on top of a photoreal render without looking stuck to the glass.
+ *
+ * The rest of this file is mostly smaller than it was, which was the point of
+ * the last pass. The previous version defined a loud mode and then the
+ * stylesheet spent it everywhere: twenty-nine uses of the accent, thirteen
+ * separate uppercase treatments, five glows. An accent that appears on the
+ * wordmark rule, the strapline, every pane's top edge, a pulsing dot, the
+ * clock numerals, the station label and six other things is not an accent, it
+ * is a texture — and when everything is emphatic nothing is.
+ *
+ * So the rules now, and they are rules rather than preferences:
+ *
+ *   One accent, one meaning.  Amber means *live*: a control that is currently
+ *   on, the focus ring, and the moment an order is ready. Nothing decorative
+ *   is ever allowed to be amber.
+ *
+ *   Two type treatments.  Serif for the two things that are a voice — the
+ *   wordmark and the name of where you are sitting. Sans for everything that
+ *   is a control or a label. Uppercase is reserved for buttons and nothing
+ *   else, because when every label is tracked micro-caps they all shout at
+ *   the same volume and the eye has nowhere to land.
+ *
+ *   One shape family.  Rounded rectangles, two radii, related. The old mix of
+ *   999px pills against 5px cards read as two designs sharing a screen.
  * ------------------------------------------------------------------------ */
 
 :root {
@@ -24,44 +41,28 @@
   --room: rgb(var(--room-r), var(--room-g), var(--room-b));
 
   /* Ink ------------------------------------------------------------------ */
-  --ink: #f6ece0;
-  --ink-2: rgba(246, 236, 224, 0.72);
-  --ink-3: rgba(246, 236, 224, 0.46);
-  --ink-4: rgba(246, 236, 224, 0.26);
-  --ink-on-warm: #1a120b;
+  --ink: #f4ebe0;
+  --ink-2: rgba(244, 235, 224, 0.78);
+  --ink-3: rgba(244, 235, 224, 0.52);
+  --ink-4: rgba(244, 235, 224, 0.3);
 
-  /* Glass ---------------------------------------------------------------- */
-  /* Darker and more opaque than the first pass. The panes were 56% and the
-     type on them was legible but only just, and "only just" over a render
-     that changes every frame means it fails somewhere. There is no cost to
-     this: the blur already destroyed whatever was behind the pane, so the
-     extra opacity buys contrast and gives up nothing you could see. */
-  --pane: color-mix(in srgb, var(--room) 9%, rgba(12, 9, 7, 0.68));
-  --pane-high: color-mix(in srgb, var(--room) 13%, rgba(16, 12, 9, 0.8));
-  --pane-edge: color-mix(in srgb, var(--room) 26%, rgba(255, 244, 228, 0.14));
-  --pane-edge-top: color-mix(in srgb, var(--room) 40%, rgba(255, 248, 236, 0.26));
-  --blur: 22px;
-  --blur-sm: 12px;
+  /* Glass ----------------------------------------------------------------
+     One surface, one border. The previous pass had three pane tints, a
+     brighter top edge and a warm gradient hairline laid over that — three
+     devices doing the job of one, on every pane on screen. */
+  --pane: color-mix(in srgb, var(--room) 8%, rgba(12, 9, 7, 0.72));
+  --pane-edge: color-mix(in srgb, var(--room) 20%, rgba(255, 244, 228, 0.12));
+  --blur: 20px;
 
-  /* The one colour anything important is allowed to be. Follows the room all
-     the way down, which is what you want on a pane edge. */
-  --warm: color-mix(in srgb, var(--room) 72%, #ffd9a6);
-  --warm-dim: color-mix(in srgb, var(--room) 40%, rgba(255, 217, 166, 0.14));
-
-  /* The accent, which deliberately does not.
-     --warm following the room is right for an edge and wrong for a control:
-     at 3am the room is a cold blue grey, so --warm is a cold blue grey, and
-     the only filled button on screen vanishes at exactly the hour the frame
-     is darkest. --accent keeps three-quarters of its own amber whatever the
-     light is doing, so there is always one thing that is unmistakably the
-     loudest in the frame — and one is the right number. */
-  --accent: color-mix(in srgb, var(--room) 26%, #ffae4e);
-  --accent-ink: #19100a;
-  --accent-dim: color-mix(in srgb, var(--accent) 16%, transparent);
-  --accent-rule: color-mix(in srgb, var(--accent) 62%, transparent);
-  --accent-glow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 8px 30px color-mix(in srgb, var(--accent) 30%, transparent);
+  /* Live ------------------------------------------------------------------
+     The only saturated colour in the interface, and it means one thing.
+     Deliberately does not follow the room all the way down: at 3am the room
+     is a cold blue grey, so a room-derived accent would be a cold blue grey
+     too, and the one control that is on would disappear at exactly the hour
+     the frame is darkest. */
+  --live: color-mix(in srgb, var(--room) 24%, #ffb152);
+  --live-ink: #17100a;
+  --live-wash: color-mix(in srgb, var(--live) 14%, transparent);
 
   /* Space ---------------------------------------------------------------- */
   --s1: 4px;
@@ -70,10 +71,9 @@
   --s4: 16px;
   --s5: 24px;
   --s6: 32px;
-  --s7: 48px;
 
   /* Distance from the edge of the window. Scales, and respects a notch. */
-  --gutter: clamp(16px, 2.6vw, 40px);
+  --gutter: clamp(16px, 2.4vw, 34px);
   --edge-x: max(var(--gutter), env(safe-area-inset-left));
   --edge-r: max(var(--gutter), env(safe-area-inset-right));
   --edge-t: max(var(--gutter), env(safe-area-inset-top));
@@ -87,45 +87,42 @@
   --ui: ui-sans-serif, -apple-system, 'SF Pro Text', 'Segoe UI', Inter, system-ui,
     sans-serif;
 
-  --t-micro: 10.5px;
-  --t-label: 11.5px;
+  --t-micro: 11px;
+  --t-label: 12.5px;
   --t-body: 14.5px;
-  --t-lead: clamp(15px, 1.15vw, 17px);
-  --t-title: clamp(22px, 2.3vw, 31px);
-
-  /* The wordmark was 16-21px, which is a caption. A barn on an empty plain is
-     a wide, quiet, horizontal picture and a small label in the corner of it
-     reads as a watermark rather than a name. These are set so the mark is the
-     second thing in the frame after the room itself. */
-  --t-mark: clamp(27px, 3.6vw, 46px);
+  --t-lead: clamp(15px, 1.1vw, 16.5px);
+  --t-num: 15.5px;
+  --t-title: clamp(20px, 1.9vw, 26px);
+  /* The wordmark. Smaller than the last pass by a long way — at 46px stacked
+     it was the second-loudest thing in a picture whose whole subject is a
+     room, and it crowded the doorway at every station. */
+  --t-mark: clamp(16px, 1.5vw, 19px);
   --t-display: clamp(34px, 5.4vw, 72px);
 
-  --track-mega: 0.4em;
-  --track-wide: 0.26em;
-  --track: 0.12em;
+  --track-caps: 0.1em;
+  --track-mark: 0.16em;
 
-  /* Shape ----------------------------------------------------------------
-     Two radii on purpose, not by accident. Small controls stay pills, which
-     is what a control has looked like for a decade and is instantly readable
-     as pressable. Anything carrying content goes nearly square, because a
-     16px-rounded card reads as an app sheet and this is meant to read as
-     print laid over a photograph. The contrast between the two is itself a
-     signal: round things do, square things say. */
-  --r-pill: 999px;
-  --r-pane: 5px;
-  --r-field: 4px;
+  /* The seated card's width, as a token because the bar has to know it: on a
+     wide screen both are at the foot of the frame, and the bar centres in
+     whatever the card has left rather than under it. */
+  --card-w: 360px;
 
-  /* Lift ----------------------------------------------------------------- */
-  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.36), 0 4px 16px rgba(0, 0, 0, 0.34);
-  --lift-2: 0 2px 8px rgba(0, 0, 0, 0.42), 0 22px 60px rgba(0, 0, 0, 0.56);
+  /* Shape ---------------------------------------------------------------- */
+  --r-pane: 12px;
+  --r-ctl: 8px;
+
+  /* Lift ------------------------------------------------------------------
+     One shadow. Chrome floating over a render needs to be separated from it,
+     and that is all this is for. */
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 40px rgba(0, 0, 0, 0.44);
 
   /* Motion --------------------------------------------------------------- */
   /* Decelerating hard. Everything in this room settles rather than arrives. */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
-  --fast: 160ms;
-  --mid: 300ms;
-  --slow: 620ms;
+  --fast: 150ms;
+  --mid: 280ms;
+  --slow: 600ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
